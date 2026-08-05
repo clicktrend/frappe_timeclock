@@ -42,6 +42,12 @@ CUSTOM_FIELDS = {
 			"unique": 1,
 			"no_copy": 1,
 		},
+		{
+			"fieldname": "timeclock_badge_qr",
+			"fieldtype": "HTML",
+			"insert_after": "timeclock_badge_id",
+			"depends_on": "eval:doc.timeclock_badge_id",
+		},
 	]
 }
 
@@ -111,16 +117,27 @@ def _ensure_employee_tab():
 
 def _fix_field_order():
 	"""Upgrade path: releases before the Tab Break placed the section after
-	attendance_device_id — move it under the tab (create_custom_fields does not
-	touch existing fields)."""
+	attendance_device_id as a collapsible 'Time Clock' section — move it under the
+	tab, always expanded, headerless (create_custom_fields does not touch existing
+	fields)."""
 	section = frappe.db.get_value(
 		"Custom Field",
 		{"dt": "Employee", "fieldname": "timeclock_section"},
-		["name", "insert_after"],
+		["name", "insert_after", "label", "collapsible"],
 		as_dict=True,
 	)
-	if section and section.insert_after != "timeclock_tab":
-		frappe.db.set_value("Custom Field", section.name, "insert_after", "timeclock_tab")
+	if not section:
+		return
+
+	updates = {}
+	if section.insert_after != "timeclock_tab":
+		updates["insert_after"] = "timeclock_tab"
+	if section.collapsible:
+		updates["collapsible"] = 0
+	if section.label:
+		updates["label"] = ""
+	if updates:
+		frappe.db.set_value("Custom Field", section.name, updates)
 		frappe.clear_cache(doctype="Employee")
 
 

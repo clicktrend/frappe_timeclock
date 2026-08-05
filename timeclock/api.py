@@ -154,6 +154,17 @@ def undo_punch(checkin: str, device_id: str | None = None):
 
 
 @frappe.whitelist()
+def get_badge_qr(employee: str):
+	"""Badge QR as inline SVG for the Employee form's Time Clock tab."""
+	if not frappe.has_permission("Employee", "read", doc=employee):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+	from timeclock.badge import timeclock_badge_qr_svg
+
+	return timeclock_badge_qr_svg(employee)
+
+
+@frappe.whitelist()
 def generate_badge(employee: str):
 	"""HR action on the Employee form: (re)issue the badge UUID. Regenerating
 	invalidates the previous badge immediately (lost card scenario)."""
