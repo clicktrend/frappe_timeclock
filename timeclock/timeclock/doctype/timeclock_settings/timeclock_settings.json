@@ -5,7 +5,8 @@
  "engine": "InnoDB",
  "field_order": [
   "kiosk_section",
-  "show_camera_preview"
+  "show_camera_preview",
+  "play_sounds"
  ],
  "fields": [
   {
@@ -19,12 +20,19 @@
    "fieldname": "show_camera_preview",
    "fieldtype": "Check",
    "label": "Show Camera Preview on Kiosk"
+  },
+  {
+   "default": "1",
+   "description": "Play a short confirmation sound on the kiosk after a successful punch (rising tone for IN, falling tone for OUT).",
+   "fieldname": "play_sounds",
+   "fieldtype": "Check",
+   "label": "Play Sounds on Kiosk"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-08-05 12:00:00.000000",
+ "modified": "2026-08-05 13:00:00.000000",
  "modified_by": "Administrator",
  "module": "Timeclock",
  "name": "Timeclock Settings",

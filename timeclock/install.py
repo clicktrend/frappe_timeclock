@@ -62,6 +62,22 @@ def setup():
 	_ensure_badge_print_format()
 	_ensure_workspace()
 	_ensure_app_tile()
+	_seed_settings_defaults()
+
+
+# Check fields on a never-saved Single read as 0, silently ignoring the field's
+# declared default — seed defaults that differ from 0 once, explicitly.
+SETTINGS_DEFAULTS = {"play_sounds": 1}
+
+
+def _seed_settings_defaults():
+	for field, value in SETTINGS_DEFAULTS.items():
+		stored = frappe.db.get_value(
+			"Singles", {"doctype": "Timeclock Settings", "field": field}, "value", order_by=None
+		)
+		if stored is None:
+			frappe.db.set_value("Timeclock Settings", None, field, value)
+	frappe.clear_document_cache("Timeclock Settings", "Timeclock Settings")
 
 
 def _ensure_employee_tab():
@@ -72,7 +88,9 @@ def _ensure_employee_tab():
 		return
 
 	own_fields = {field["fieldname"] for field in CUSTOM_FIELDS["Employee"]}
-	last_field = [f.fieldname for f in frappe.get_meta("Employee").fields if f.fieldname not in own_fields][-1]
+	last_field = [f.fieldname for f in frappe.get_meta("Employee").fields if f.fieldname not in own_fields][
+		-1
+	]
 	create_custom_fields(
 		{
 			"Employee": [
@@ -93,7 +111,10 @@ def _fix_field_order():
 	attendance_device_id — move it under the tab (create_custom_fields does not
 	touch existing fields)."""
 	section = frappe.db.get_value(
-		"Custom Field", {"dt": "Employee", "fieldname": "timeclock_section"}, ["name", "insert_after"], as_dict=True
+		"Custom Field",
+		{"dt": "Employee", "fieldname": "timeclock_section"},
+		["name", "insert_after"],
+		as_dict=True,
 	)
 	if section and section.insert_after != "timeclock_tab":
 		frappe.db.set_value("Custom Field", section.name, "insert_after", "timeclock_tab")

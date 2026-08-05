@@ -24,7 +24,11 @@ def get_kiosk_config():
 	"""Kiosk behaviour flags from Timeclock Settings (single)."""
 	_check_kiosk_access()
 	settings = frappe.get_cached_doc("Timeclock Settings")
-	return {"show_camera_preview": bool(settings.show_camera_preview)}
+	# non-zero defaults for never-saved Singles are seeded in install.setup()
+	return {
+		"show_camera_preview": bool(settings.show_camera_preview),
+		"play_sounds": bool(settings.play_sounds),
+	}
 
 
 @frappe.whitelist()

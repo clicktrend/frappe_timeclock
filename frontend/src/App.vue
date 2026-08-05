@@ -157,6 +157,8 @@ import { createResource } from "frappe-ui"
 import QrScanner from "qr-scanner"
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
 
+import { playPunchSound, unlockSound } from "./sound.js"
+
 const DEVICE_ID = new URLSearchParams(window.location.search).get("device") || "kiosk"
 const CONFIRM_SECONDS = 5
 const SCAN_COOLDOWN_MS = 4000
@@ -181,6 +183,7 @@ const kioskConfig = createResource({
 	auto: true,
 })
 const showPreview = computed(() => Boolean(kioskConfig.data?.show_camera_preview))
+const soundsEnabled = computed(() => Boolean(kioskConfig.data?.play_sounds))
 
 const punch = createResource({ url: "timeclock.api.punch" })
 const punchBadge = createResource({ url: "timeclock.api.punch_badge" })
@@ -291,6 +294,7 @@ let undoTimer = null
 
 function showResult(res) {
 	result.value = res
+	if (soundsEnabled.value) playPunchSound(res.log_type)
 	undoDone.value = false
 	undoLeft.value = CONFIRM_SECONDS
 	screen.value = "done"
@@ -351,6 +355,9 @@ onMounted(() => {
 	tick()
 	clockTimer = setInterval(tick, 10_000)
 	startScanner()
+	// browsers unlock audio only after a user gesture; badge-only users may never
+	// tap, so grab the very first pointer contact anywhere on the page
+	window.addEventListener("pointerdown", unlockSound, { once: true })
 })
 onUnmounted(() => {
 	clearInterval(clockTimer)
