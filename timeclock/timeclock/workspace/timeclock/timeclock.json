@@ -1,9 +1,19 @@
 {
  "app": "timeclock",
- "charts": [],
- "content": "[{\"id\": \"tcHeader\", \"type\": \"header\", \"data\": {\"text\": \"<span class='h4'><b>Timeclock</b></span>\", \"col\": 12}}, {\"id\": \"tcShortcut0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Timeclock Settings\", \"col\": 3}}, {\"id\": \"tcShortcut1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Employees\", \"col\": 3}}, {\"id\": \"tcShortcut2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Checkins\", \"col\": 3}}, {\"id\": \"tcShortcut3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Attendance\", \"col\": 3}}]",
+ "charts": [
+  {
+   "chart_name": "Timeclock Arbeitsstunden",
+   "label": "Timeclock Arbeitsstunden"
+  }
+ ],
+ "content": "[{\"id\": \"tcHeader\", \"type\": \"header\", \"data\": {\"text\": \"<span class='h4'><b>Timeclock</b></span>\", \"col\": 12}}, {\"id\": \"tcCard0\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Jetzt anwesend\", \"col\": 3}}, {\"id\": \"tcCard1\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Heute gestempelt\", \"col\": 3}}, {\"id\": \"tcCard2\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Fehlende OUT-Stempel\", \"col\": 3}}, {\"id\": \"tcCard3\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Abwesend heute\", \"col\": 3}}, {\"id\": \"tcWhoIsIn\", \"type\": \"custom_block\", \"data\": {\"custom_block_name\": \"Timeclock Who's In\", \"col\": 12}}, {\"id\": \"tcChart\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Timeclock Arbeitsstunden\", \"col\": 12}}, {\"id\": \"tcSpacer\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"tcShortcut0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Timeclock Settings\", \"col\": 3}}, {\"id\": \"tcShortcut1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Employees\", \"col\": 3}}, {\"id\": \"tcShortcut2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Checkins\", \"col\": 3}}, {\"id\": \"tcShortcut3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Attendance\", \"col\": 3}}]",
  "creation": "2026-08-05 11:31:05.891641",
- "custom_blocks": [],
+ "custom_blocks": [
+  {
+   "custom_block_name": "Timeclock Who's In",
+   "label": "Timeclock Who's In"
+  }
+ ],
  "docstatus": 0,
  "doctype": "Workspace",
  "hide_custom": 0,
@@ -14,11 +24,28 @@
  "label": "Timeclock",
  "link_type": "DocType",
  "links": [],
- "modified": "2026-08-05 11:44:24.844620",
+ "modified": "2026-08-05 11:51:20.808589",
  "modified_by": "Administrator",
  "module": "Timeclock",
  "name": "Timeclock",
- "number_cards": [],
+ "number_cards": [
+  {
+   "label": "Jetzt anwesend",
+   "number_card_name": "Jetzt anwesend"
+  },
+  {
+   "label": "Heute gestempelt",
+   "number_card_name": "Heute gestempelt"
+  },
+  {
+   "label": "Fehlende OUT-Stempel",
+   "number_card_name": "Fehlende OUT-Stempel"
+  },
+  {
+   "label": "Abwesend heute",
+   "number_card_name": "Abwesend heute"
+  }
+ ],
  "owner": "Administrator",
  "public": 1,
  "quick_lists": [],

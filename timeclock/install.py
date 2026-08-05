@@ -60,6 +60,9 @@ def setup():
 	_fix_field_order()
 	_ensure_kiosk_role()
 	_ensure_badge_print_format()
+	_ensure_number_cards()
+	_ensure_dashboard_chart()
+	_ensure_whoisin_block()
 	_ensure_workspace()
 	_ensure_app_tile()
 	_seed_settings_defaults()
@@ -132,6 +135,105 @@ def _ensure_kiosk_role():
 		).insert(ignore_permissions=True)
 
 
+# Number Card names itself after its label (autoname) — the label IS the identity.
+NUMBER_CARDS = [
+	{"label": "Jetzt anwesend", "method": "timeclock.dashboard.present_now"},
+	{"label": "Heute gestempelt", "method": "timeclock.dashboard.checkins_today"},
+	{"label": "Fehlende OUT-Stempel", "method": "timeclock.dashboard.missing_out"},
+	{"label": "Abwesend heute", "method": "timeclock.dashboard.absent_today"},
+]
+
+DASHBOARD_CHART = "Timeclock Arbeitsstunden"
+WHOISIN_BLOCK = "Timeclock Who's In"
+
+WHOISIN_HTML = """<div class="tc-whoisin">
+	<div class="tc-title">Wer ist da</div>
+	<div class="tc-board"><div class="tc-empty">Lade …</div></div>
+</div>"""
+
+WHOISIN_SCRIPT = """frappe.call({ method: "timeclock.dashboard.get_present_board" }).then((r) => {
+	const rows = r.message || [];
+	const board = root_element.querySelector(".tc-board");
+	if (!rows.length) {
+		board.innerHTML = "<div class='tc-empty'>Niemand eingestempelt</div>";
+		return;
+	}
+	board.innerHTML = rows
+		.map(
+			(x) =>
+				`<div class="tc-row"><span class="tc-dot"></span><span class="tc-name">${frappe.utils.escape_html(
+					x.employee_name
+				)}</span><span class="tc-meta">seit ${x.since}${
+					x.device ? " · " + frappe.utils.escape_html(x.device) : ""
+				}</span></div>`
+		)
+		.join("");
+});"""
+
+WHOISIN_STYLE = """.tc-whoisin { padding: 8px 4px; }
+.tc-title { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+.tc-board { display: flex; flex-direction: column; gap: 6px; }
+.tc-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--bg-color, #f8f8f8); border-radius: 8px; }
+.tc-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
+.tc-name { font-weight: 500; }
+.tc-meta { color: var(--text-muted, #888); font-size: 12px; margin-left: auto; }
+.tc-empty { color: var(--text-muted, #888); padding: 4px 2px; }"""
+
+
+def _ensure_number_cards():
+	for card in NUMBER_CARDS:
+		if frappe.db.exists("Number Card", card["label"]):
+			frappe.db.set_value("Number Card", card["label"], "method", card["method"])
+			continue
+		frappe.get_doc(
+			{
+				"doctype": "Number Card",
+				"label": card["label"],
+				"type": "Custom",
+				"method": card["method"],
+				"is_public": 1,
+				"module": "Timeclock",
+			}
+		).insert(ignore_permissions=True)
+
+
+def _ensure_dashboard_chart():
+	if frappe.db.exists("Dashboard Chart", DASHBOARD_CHART):
+		return
+	frappe.get_doc(
+		{
+			"doctype": "Dashboard Chart",
+			"chart_name": DASHBOARD_CHART,
+			"chart_type": "Sum",
+			"document_type": "Attendance",
+			"based_on": "attendance_date",
+			"value_based_on": "working_hours",
+			"timespan": "Last Month",
+			"time_interval": "Daily",
+			"timeseries": 1,
+			"type": "Bar",
+			"filters_json": "[]",
+			"is_public": 1,
+			"module": "Timeclock",
+		}
+	).insert(ignore_permissions=True)
+
+
+def _ensure_whoisin_block():
+	if frappe.db.exists("Custom HTML Block", WHOISIN_BLOCK):
+		frappe.db.set_value(
+			"Custom HTML Block",
+			WHOISIN_BLOCK,
+			{"html": WHOISIN_HTML, "script": WHOISIN_SCRIPT, "style": WHOISIN_STYLE},
+			update_modified=False,
+		)
+		return
+	doc = frappe.new_doc("Custom HTML Block")
+	doc.name = WHOISIN_BLOCK
+	doc.update({"html": WHOISIN_HTML, "script": WHOISIN_SCRIPT, "style": WHOISIN_STYLE})
+	doc.insert(ignore_permissions=True)
+
+
 WORKSPACE_SHORTCUTS = [
 	{"label": "Timeclock Settings", "link_to": "Timeclock Settings", "type": "DocType"},
 	{
@@ -158,6 +260,23 @@ def _ensure_workspace():
 			"data": {"text": "<span class='h4'><b>Timeclock</b></span>", "col": 12},
 		}
 	]
+	for i, card in enumerate(NUMBER_CARDS):
+		content.append(
+			{
+				"id": f"tcCard{i}",
+				"type": "number_card",
+				"data": {"number_card_name": card["label"], "col": 3},
+			}
+		)
+	content.append(
+		{
+			"id": "tcWhoIsIn",
+			"type": "custom_block",
+			"data": {"custom_block_name": WHOISIN_BLOCK, "col": 12},
+		}
+	)
+	content.append({"id": "tcChart", "type": "chart", "data": {"chart_name": DASHBOARD_CHART, "col": 12}})
+	content.append({"id": "tcSpacer", "type": "spacer", "data": {"col": 12}})
 	for i, shortcut in enumerate(WORKSPACE_SHORTCUTS):
 		content.append(
 			{
@@ -186,6 +305,13 @@ def _ensure_workspace():
 	doc.set("shortcuts", [])
 	for shortcut in WORKSPACE_SHORTCUTS:
 		doc.append("shortcuts", shortcut)
+	doc.set("number_cards", [])
+	for card in NUMBER_CARDS:
+		doc.append("number_cards", {"number_card_name": card["label"], "label": card["label"]})
+	doc.set("custom_blocks", [])
+	doc.append("custom_blocks", {"custom_block_name": WHOISIN_BLOCK, "label": WHOISIN_BLOCK})
+	doc.set("charts", [])
+	doc.append("charts", {"chart_name": DASHBOARD_CHART, "label": DASHBOARD_CHART})
 	doc.set("roles", [])
 	for role in WORKSPACE_ROLES:
 		doc.append("roles", {"role": role})
