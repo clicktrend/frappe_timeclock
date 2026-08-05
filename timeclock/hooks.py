@@ -31,6 +31,8 @@ add_to_apps_screen = [
 
 # HR buttons (Generate/Print Badge) on the Employee form
 doctype_js = {"Employee": "public/js/employee.js"}
+# Timeclock-filtered employee list links straight to the Time Clock tab
+doctype_list_js = {"Employee": "public/js/employee_list.js"}
 
 # QR rendering for the 'Timeclock Badge' print format
 jinja = {"methods": ["timeclock.badge.timeclock_badge_qr_svg"]}

@@ -14,7 +14,7 @@
  "label": "Timeclock",
  "link_type": "DocType",
  "links": [],
- "modified": "2026-08-05 11:31:05.891641",
+ "modified": "2026-08-05 11:41:07.785085",
  "modified_by": "Administrator",
  "module": "Timeclock",
  "name": "Timeclock",
@@ -42,6 +42,7 @@
    "doc_view": "List",
    "label": "Employees",
    "link_to": "Employee",
+   "stats_filter": "{\"timeclock_enabled\": 1}",
    "type": "DocType"
   },
   {

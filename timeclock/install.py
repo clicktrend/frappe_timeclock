@@ -9,14 +9,15 @@ WORKSPACE_ROLES = ["System Manager", "HR Manager"]
 
 # App-owned custom fields on Employee. Created on install AND on migrate so they
 # survive site migrations without shipping fixtures (idempotent by fieldname).
+# They live in their own "Time Clock" tab (Tab Break created dynamically in
+# setup(), appended after the form's last field), reachable via URL anchor
+# #timeclock_tab — frappe activates the tab whose fieldname matches the hash.
 CUSTOM_FIELDS = {
 	"Employee": [
 		{
 			"fieldname": "timeclock_section",
 			"fieldtype": "Section Break",
-			"label": "Time Clock",
-			"insert_after": "attendance_device_id",
-			"collapsible": 1,
+			"insert_after": "timeclock_tab",
 		},
 		{
 			"fieldname": "timeclock_enabled",
@@ -54,11 +55,49 @@ def after_migrate():
 
 
 def setup():
+	_ensure_employee_tab()
 	create_custom_fields(CUSTOM_FIELDS, ignore_validate=True)
+	_fix_field_order()
 	_ensure_kiosk_role()
 	_ensure_badge_print_format()
 	_ensure_workspace()
 	_ensure_app_tile()
+
+
+def _ensure_employee_tab():
+	"""Own 'Time Clock' tab on the Employee form, appended after the last existing
+	field. Created once; the anchor is computed dynamically because the last field
+	differs per installed apps."""
+	if frappe.db.exists("Custom Field", {"dt": "Employee", "fieldname": "timeclock_tab"}):
+		return
+
+	own_fields = {field["fieldname"] for field in CUSTOM_FIELDS["Employee"]}
+	last_field = [f.fieldname for f in frappe.get_meta("Employee").fields if f.fieldname not in own_fields][-1]
+	create_custom_fields(
+		{
+			"Employee": [
+				{
+					"fieldname": "timeclock_tab",
+					"fieldtype": "Tab Break",
+					"label": "Time Clock",
+					"insert_after": last_field,
+				}
+			]
+		},
+		ignore_validate=True,
+	)
+
+
+def _fix_field_order():
+	"""Upgrade path: releases before the Tab Break placed the section after
+	attendance_device_id — move it under the tab (create_custom_fields does not
+	touch existing fields)."""
+	section = frappe.db.get_value(
+		"Custom Field", {"dt": "Employee", "fieldname": "timeclock_section"}, ["name", "insert_after"], as_dict=True
+	)
+	if section and section.insert_after != "timeclock_tab":
+		frappe.db.set_value("Custom Field", section.name, "insert_after", "timeclock_tab")
+		frappe.clear_cache(doctype="Employee")
 
 
 def _ensure_kiosk_role():
@@ -74,7 +113,15 @@ def _ensure_kiosk_role():
 
 WORKSPACE_SHORTCUTS = [
 	{"label": "Timeclock Settings", "link_to": "Timeclock Settings", "type": "DocType"},
-	{"label": "Employees", "link_to": "Employee", "type": "DocType", "doc_view": "List"},
+	{
+		"label": "Employees",
+		"link_to": "Employee",
+		"type": "DocType",
+		"doc_view": "List",
+		# timeclock context marker: the employee list JS appends #timeclock_tab to
+		# row links while this filter is active, landing directly on our tab
+		"stats_filter": json.dumps({"timeclock_enabled": 1}),
+	},
 	{"label": "Checkins", "link_to": "Employee Checkin", "type": "DocType", "doc_view": "List"},
 	{"label": "Attendance", "link_to": "Attendance", "type": "DocType", "doc_view": "List"},
 ]
