@@ -29,13 +29,37 @@
 				</div>
 			</div>
 
-			<!-- Badge scanner panel (hidden when no camera is available) -->
-			<aside v-show="camAvailable" class="flex w-80 flex-col gap-3 border-l border-gray-200 bg-white p-4">
-				<div class="text-lg font-medium text-gray-800">Badge vorhalten</div>
-				<video ref="videoEl" class="aspect-square w-full rounded-xl bg-black object-cover"></video>
-				<div v-if="scanError" class="text-center text-lg font-medium text-red-600">{{ scanError }}</div>
-				<div v-else-if="scanBusy" class="text-center text-sm text-gray-500">Wird verarbeitet …</div>
-				<div v-else class="text-center text-sm text-gray-400">QR-Code des Ausweises vor die Kamera halten</div>
+			<!-- Badge scanner panel. The camera IS active while scanning, but its image is
+			     deliberately never shown (privacy: nobody should feel filmed). The video
+			     element stays rendered at 1x1px/opacity-0 so frame grabbing keeps working.
+			     If the camera could not be started, the panel says so loudly instead. -->
+			<aside
+				class="relative flex w-80 flex-col items-center justify-center gap-4 border-l border-gray-200 bg-white p-6 text-center"
+			>
+				<video ref="videoEl" class="pointer-events-none absolute h-px w-px opacity-0"></video>
+
+				<template v-if="camAvailable">
+					<div class="text-8xl" aria-hidden="true">🪪</div>
+					<div class="text-xl font-semibold text-gray-800">Badge vorhalten</div>
+					<div v-if="scanError" class="text-lg font-medium text-red-600">{{ scanError }}</div>
+					<div v-else-if="scanBusy" class="text-base text-gray-600">Wird gelesen …</div>
+					<div v-else class="flex items-center gap-2 text-sm text-gray-400">
+						<span class="relative flex h-2.5 w-2.5">
+							<span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+							<span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500"></span>
+						</span>
+						Scanner bereit — Ausweis-QR kurz vorhalten
+					</div>
+				</template>
+
+				<template v-else>
+					<div class="text-7xl" aria-hidden="true">⚠️</div>
+					<div class="text-xl font-semibold text-amber-700">Terminal nicht bereit</div>
+					<div class="text-sm text-gray-500">
+						Kamera konnte nicht gestartet werden — Badge-Scan ist deaktiviert.<br />
+						Bitte per Auswahl + PIN stempeln und den Admin informieren.
+					</div>
+				</template>
 			</aside>
 		</main>
 
