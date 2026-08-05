@@ -6,26 +6,37 @@
 			<div class="text-2xl font-mono text-gray-700">{{ clock }}</div>
 		</header>
 
-		<!-- Screen: employee grid -->
-		<main v-if="screen === 'grid'" class="flex-1 overflow-y-auto p-6">
-			<div v-if="employees.loading" class="mt-20 text-center text-lg text-gray-500">Lade Mitarbeiter …</div>
-			<div v-else-if="employees.error" class="mt-20 text-center text-lg text-red-600">
-				Keine Verbindung oder keine Berechtigung.<br />
-				<span class="text-sm text-gray-500">Kiosk-Benutzer anmelden und Seite neu laden.</span>
+		<!-- Screen: employee grid + badge camera -->
+		<main v-if="screen === 'grid'" class="flex flex-1 overflow-hidden">
+			<div class="flex-1 overflow-y-auto p-6">
+				<div v-if="employees.loading" class="mt-20 text-center text-lg text-gray-500">Lade Mitarbeiter …</div>
+				<div v-else-if="employees.error" class="mt-20 text-center text-lg text-red-600">
+					Keine Verbindung oder keine Berechtigung.<br />
+					<span class="text-sm text-gray-500">Kiosk-Benutzer anmelden und Seite neu laden.</span>
+				</div>
+				<div v-else class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+					<button
+						v-for="emp in employees.data"
+						:key="emp.name"
+						class="flex h-28 flex-col items-center justify-center rounded-xl bg-white text-lg font-medium text-gray-800 shadow transition active:scale-95 active:bg-blue-50"
+						@click="selectEmployee(emp)"
+					>
+						<span>{{ emp.employee_name }}</span>
+						<span v-if="emp.last_time" class="mt-1 text-xs font-normal text-gray-400">
+							zuletzt {{ emp.last_log_type === "IN" ? "gekommen" : "gegangen" }}
+						</span>
+					</button>
+				</div>
 			</div>
-			<div v-else class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-				<button
-					v-for="emp in employees.data"
-					:key="emp.name"
-					class="flex h-28 flex-col items-center justify-center rounded-xl bg-white text-lg font-medium text-gray-800 shadow transition active:scale-95 active:bg-blue-50"
-					@click="selectEmployee(emp)"
-				>
-					<span>{{ emp.employee_name }}</span>
-					<span v-if="emp.last_time" class="mt-1 text-xs font-normal text-gray-400">
-						zuletzt {{ emp.last_log_type === "IN" ? "gekommen" : "gegangen" }}
-					</span>
-				</button>
-			</div>
+
+			<!-- Badge scanner panel (hidden when no camera is available) -->
+			<aside v-show="camAvailable" class="flex w-80 flex-col gap-3 border-l border-gray-200 bg-white p-4">
+				<div class="text-lg font-medium text-gray-800">Badge vorhalten</div>
+				<video ref="videoEl" class="aspect-square w-full rounded-xl bg-black object-cover"></video>
+				<div v-if="scanError" class="text-center text-lg font-medium text-red-600">{{ scanError }}</div>
+				<div v-else-if="scanBusy" class="text-center text-sm text-gray-500">Wird verarbeitet …</div>
+				<div v-else class="text-center text-sm text-gray-400">QR-Code des Ausweises vor die Kamera halten</div>
+			</aside>
 		</main>
 
 		<!-- Screen: direction + PIN -->
@@ -84,7 +95,7 @@
 			<button class="mt-2 text-lg text-gray-500 underline" @click="reset">Abbrechen</button>
 		</main>
 
-		<!-- Screen: confirmation -->
+		<!-- Screen: confirmation (+ undo window) -->
 		<main
 			v-else
 			class="flex flex-1 flex-col items-center justify-center gap-4"
@@ -97,16 +108,26 @@
 			<div class="text-xl text-white/90">
 				{{ result.log_type === "IN" ? "Eingestempelt" : "Ausgestempelt" }} um {{ formatTime(result.time) }}
 			</div>
+			<button
+				v-if="undoLeft > 0"
+				class="mt-6 rounded-xl bg-white/20 px-8 py-4 text-xl font-medium text-white shadow transition active:scale-95"
+				@click="doUndo"
+			>
+				Rückgängig ({{ undoLeft }})
+			</button>
+			<div v-if="undoDone" class="text-lg text-white/90">Storniert.</div>
 		</main>
 	</div>
 </template>
 
 <script setup>
 import { createResource } from "frappe-ui"
-import { onMounted, onUnmounted, ref } from "vue"
+import QrScanner from "qr-scanner"
+import { nextTick, onMounted, onUnmounted, ref, watch } from "vue"
 
 const DEVICE_ID = new URLSearchParams(window.location.search).get("device") || "kiosk"
 const CONFIRM_SECONDS = 5
+const SCAN_COOLDOWN_MS = 4000
 
 const screen = ref("grid")
 const selected = ref(null)
@@ -115,6 +136,8 @@ const pin = ref("")
 const error = ref("")
 const punching = ref(false)
 const result = ref(null)
+const undoLeft = ref(0)
+const undoDone = ref(false)
 
 const employees = createResource({
 	url: "timeclock.api.get_kiosk_employees",
@@ -122,6 +145,10 @@ const employees = createResource({
 })
 
 const punch = createResource({ url: "timeclock.api.punch" })
+const punchBadge = createResource({ url: "timeclock.api.punch_badge" })
+const undoPunch = createResource({ url: "timeclock.api.undo_punch" })
+
+// ---- V1: grid + PIN ----
 
 function selectEmployee(emp) {
 	selected.value = emp
@@ -145,28 +172,127 @@ function pressKey(key) {
 async function submit() {
 	punching.value = true
 	try {
-		result.value = await punch.submit({
-			employee: selected.value.name,
-			log_type: direction.value,
-			pin: pin.value,
-			device_id: DEVICE_ID,
-		})
-		screen.value = "done"
-		setTimeout(reset, CONFIRM_SECONDS * 1000)
+		showResult(
+			await punch.submit({
+				employee: selected.value.name,
+				log_type: direction.value,
+				pin: pin.value,
+				device_id: DEVICE_ID,
+			})
+		)
 	} catch (err) {
-		error.value = err.messages?.[0] || err.message || "Fehler — bitte erneut versuchen"
+		error.value = errorMessage(err)
 		pin.value = ""
 	} finally {
 		punching.value = false
 	}
 }
 
+// ---- V2: badge camera ----
+
+const videoEl = ref(null)
+const camAvailable = ref(true)
+const scanBusy = ref(false)
+const scanError = ref("")
+let scanner = null
+let lastScanCode = ""
+let lastScanAt = 0
+let scanErrorTimer = null
+
+async function startScanner() {
+	await nextTick()
+	if (!videoEl.value || scanner) return
+	try {
+		scanner = new QrScanner(videoEl.value, onScan, {
+			returnDetailedScanResult: true,
+			maxScansPerSecond: 4,
+		})
+		await scanner.start()
+		camAvailable.value = true
+	} catch {
+		camAvailable.value = false
+		scanner = null
+	}
+}
+
+function stopScanner() {
+	if (scanner) {
+		scanner.destroy()
+		scanner = null
+	}
+}
+
+async function onScan(scanResult) {
+	const code = scanResult.data
+	if (!code || scanBusy.value || screen.value !== "grid") return
+	const now = Date.now()
+	if (code === lastScanCode && now - lastScanAt < SCAN_COOLDOWN_MS) return
+	lastScanCode = code
+	lastScanAt = now
+
+	scanBusy.value = true
+	try {
+		showResult(await punchBadge.submit({ badge_id: code, device_id: DEVICE_ID }))
+	} catch (err) {
+		scanError.value = errorMessage(err)
+		clearTimeout(scanErrorTimer)
+		scanErrorTimer = setTimeout(() => (scanError.value = ""), 3000)
+	} finally {
+		scanBusy.value = false
+	}
+}
+
+watch(screen, (value) => {
+	if (value === "grid") startScanner()
+	else stopScanner()
+})
+
+// ---- confirmation + undo ----
+
+let undoTimer = null
+
+function showResult(res) {
+	result.value = res
+	undoDone.value = false
+	undoLeft.value = CONFIRM_SECONDS
+	screen.value = "done"
+	clearInterval(undoTimer)
+	undoTimer = setInterval(() => {
+		undoLeft.value -= 1
+		if (undoLeft.value <= 0) {
+			clearInterval(undoTimer)
+			reset()
+		}
+	}, 1000)
+}
+
+async function doUndo() {
+	clearInterval(undoTimer)
+	undoLeft.value = 0
+	try {
+		await undoPunch.submit({ checkin: result.value.name, device_id: DEVICE_ID })
+		undoDone.value = true
+	} catch (err) {
+		scanError.value = errorMessage(err)
+	}
+	setTimeout(reset, 1500)
+}
+
 function reset() {
+	clearInterval(undoTimer)
 	screen.value = "grid"
 	selected.value = null
 	pin.value = ""
 	error.value = ""
+	undoDone.value = false
+	undoLeft.value = 0
 	employees.reload()
+}
+
+// ---- helpers ----
+
+function errorMessage(err) {
+	return err.messages?.[0] || err.message || "Fehler — bitte erneut versuchen"
 }
 
 function firstName(fullName) {
@@ -186,6 +312,11 @@ function tick() {
 onMounted(() => {
 	tick()
 	clockTimer = setInterval(tick, 10_000)
+	startScanner()
 })
-onUnmounted(() => clearInterval(clockTimer))
+onUnmounted(() => {
+	clearInterval(clockTimer)
+	clearInterval(undoTimer)
+	stopScanner()
+})
 </script>

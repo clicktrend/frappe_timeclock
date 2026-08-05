@@ -1,14 +1,16 @@
 import hmac
+import uuid
 
 import frappe
 from frappe import _
-from frappe.utils import now_datetime
+from frappe.utils import now_datetime, time_diff_in_seconds
 from frappe.utils.password import get_decrypted_password
 
 from timeclock.install import KIOSK_ROLE
 
 MAX_PIN_ATTEMPTS = 5
 LOCKOUT_SECONDS = 60
+UNDO_WINDOW_SECONDS = 30
 
 
 def _check_kiosk_access():
@@ -86,7 +88,72 @@ def punch(employee: str, log_type: str, pin: str, device_id: str | None = None):
 		frappe.throw(_("Wrong PIN"))
 
 	frappe.cache.delete_value(cache_key)
+	return _insert_checkin(emp, log_type, device_id)
 
+
+@frappe.whitelist()
+def punch_badge(badge_id: str, device_id: str | None = None):
+	"""QR badge scan: resolve the badge, toggle the direction from the last log
+	and create an Employee Checkin. The badge is a possession factor (random
+	UUID), so no PIN is required — the PIN path stays available in parallel."""
+	_check_kiosk_access()
+
+	if not badge_id:
+		frappe.throw(_("Missing badge"))
+
+	cache_key = f"timeclock_badge_fail:{frappe.session.user}:{device_id or 'kiosk'}"
+	fails = frappe.cache.get_value(cache_key) or 0
+	if int(fails) >= MAX_PIN_ATTEMPTS:
+		frappe.throw(_("Too many unknown badges. Please wait a minute and try again."))
+
+	emp = frappe.db.get_value(
+		"Employee",
+		{"timeclock_badge_id": badge_id.strip()},
+		["name", "employee_name", "status", "timeclock_enabled"],
+		as_dict=True,
+	)
+	if not emp or emp.status != "Active" or not emp.timeclock_enabled:
+		frappe.cache.set_value(cache_key, int(fails) + 1, expires_in_sec=LOCKOUT_SECONDS)
+		frappe.throw(_("Unknown badge"))
+
+	frappe.cache.delete_value(cache_key)
+
+	last_log_type = frappe.db.get_value(
+		"Employee Checkin", {"employee": emp.name}, "log_type", order_by="time desc"
+	)
+	log_type = "OUT" if last_log_type == "IN" else "IN"
+	return _insert_checkin(emp, log_type, device_id)
+
+
+@frappe.whitelist()
+def undo_punch(checkin: str, device_id: str | None = None):
+	"""Undo a punch right after it happened (badge scans have no confirmation step).
+	Only the same kiosk device may undo, and only within the undo window."""
+	_check_kiosk_access()
+
+	doc = frappe.get_doc("Employee Checkin", checkin)
+	if (doc.device_id or "kiosk") != (device_id or "kiosk"):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	if time_diff_in_seconds(now_datetime(), doc.creation) > UNDO_WINDOW_SECONDS:
+		frappe.throw(_("Undo window has expired"))
+
+	frappe.delete_doc("Employee Checkin", checkin, ignore_permissions=True)
+	return {"undone": checkin}
+
+
+@frappe.whitelist()
+def generate_badge(employee: str):
+	"""HR action on the Employee form: (re)issue the badge UUID. Regenerating
+	invalidates the previous badge immediately (lost card scenario)."""
+	if not frappe.has_permission("Employee", "write", doc=employee):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+
+	badge_id = uuid.uuid4().hex
+	frappe.db.set_value("Employee", employee, "timeclock_badge_id", badge_id)
+	return badge_id
+
+
+def _insert_checkin(emp, log_type: str, device_id: str | None):
 	checkin = frappe.get_doc(
 		{
 			"doctype": "Employee Checkin",
@@ -104,4 +171,5 @@ def punch(employee: str, log_type: str, pin: str, device_id: str | None = None):
 		"employee_name": emp.employee_name,
 		"log_type": log_type,
 		"time": checkin.time,
+		"undo_seconds": UNDO_WINDOW_SECONDS,
 	}

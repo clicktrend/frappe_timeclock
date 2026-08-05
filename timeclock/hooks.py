@@ -18,6 +18,17 @@ required_apps = ["hrms"]
 after_install = "timeclock.install.after_install"
 after_migrate = "timeclock.install.after_migrate"
 
+# HR buttons (Generate/Print Badge) on the Employee form
+doctype_js = {"Employee": "public/js/employee.js"}
+
+# QR rendering for the 'Timeclock Badge' print format
+jinja = {"methods": ["timeclock.badge.timeclock_badge_qr_svg"]}
+
+# The kiosk writes checkins in realtime; keep Shift Type.last_sync_of_checkin
+# current so HRMS auto attendance actually processes them (normally the
+# biometric sync tool advances that field).
+scheduler_events = {"hourly": ["timeclock.tasks.update_last_sync_of_checkin"]}
+
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
 # 	{

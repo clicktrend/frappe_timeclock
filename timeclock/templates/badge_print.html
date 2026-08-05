@@ -1,0 +1,45 @@
+<style>
+	.timeclock-badge {
+		width: 86mm;
+		height: 54mm;
+		border: 0.3mm solid #ccc;
+		border-radius: 3mm;
+		padding: 5mm;
+		display: flex;
+		align-items: center;
+		gap: 6mm;
+		font-family: sans-serif;
+		page-break-inside: avoid;
+	}
+	.timeclock-badge .qr svg {
+		width: 40mm;
+		height: 40mm;
+	}
+	.timeclock-badge .meta {
+		flex: 1;
+		min-width: 0;
+	}
+	.timeclock-badge .meta .name {
+		font-size: 14pt;
+		font-weight: 600;
+		margin-bottom: 2mm;
+	}
+	.timeclock-badge .meta .sub {
+		font-size: 9pt;
+		color: #555;
+	}
+</style>
+
+{% if not doc.timeclock_badge_id %}
+	<p>{{ _("No badge issued yet — use 'Generate Badge' on the Employee form first.") }}</p>
+{% else %}
+	<div class="timeclock-badge">
+		<div class="qr">{{ timeclock_badge_qr_svg(doc.name) }}</div>
+		<div class="meta">
+			<div class="name">{{ doc.employee_name }}</div>
+			<div class="sub">{{ doc.designation or "" }}</div>
+			<div class="sub">{{ doc.company }}</div>
+			<div class="sub">{{ doc.name }}</div>
+		</div>
+	</div>
+{% endif %}
