@@ -1,14 +1,22 @@
 app_name = "timeclock"
 app_title = "Timeclock"
 app_publisher = "Adomio · Yücel & Tirgil GbR"
-app_description = "Kiosk time & attendance terminal for Frappe HR (tablet kiosk, employee grid + PIN, QR badge)"
+app_description = (
+	"Kiosk time & attendance terminal for Frappe HR (tablet kiosk, employee grid + PIN, QR badge)"
+)
 app_email = "mitgravur@gmail.com"
 app_license = "gpl-3.0"
 
 # Apps
 # ------------------
 
-# required_apps = []
+required_apps = ["hrms"]
+
+# Installation
+# ------------
+
+after_install = "timeclock.install.after_install"
+after_migrate = "timeclock.install.after_migrate"
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
@@ -255,4 +263,3 @@ app_license = "gpl-3.0"
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
-
