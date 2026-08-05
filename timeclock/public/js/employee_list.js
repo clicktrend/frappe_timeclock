@@ -6,8 +6,10 @@
 frappe.listview_settings["Employee"] = frappe.listview_settings["Employee"] || {};
 
 frappe.listview_settings["Employee"].get_form_link = (doc) => {
-	// list rows don't carry a doctype field — this is always the Employee list
-	let link = "/app/employee/" + encodeURIComponent(doc.name);
+	// list rows don't carry a doctype field — this is always the Employee list.
+	// Keep the user in whichever desk UI they are in (v16 /desk vs classic /app).
+	const prefix = window.location.pathname.startsWith("/desk") ? "/desk" : "/app";
+	let link = prefix + "/employee/" + encodeURIComponent(doc.name);
 	try {
 		const filters = cur_list?.filter_area?.get() || [];
 		if (filters.some((f) => f[1] === "timeclock_enabled")) {
