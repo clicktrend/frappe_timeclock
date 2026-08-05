@@ -1,0 +1,62 @@
+{
+ "app": "timeclock",
+ "charts": [],
+ "content": "[{\"id\": \"tcHeader\", \"type\": \"header\", \"data\": {\"text\": \"<span class='h4'><b>Timeclock</b></span>\", \"col\": 12}}, {\"id\": \"tcShortcut0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Timeclock Settings\", \"col\": 3}}, {\"id\": \"tcShortcut1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Employees\", \"col\": 3}}, {\"id\": \"tcShortcut2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Checkins\", \"col\": 3}}, {\"id\": \"tcShortcut3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Attendance\", \"col\": 3}}]",
+ "creation": "2026-08-05 11:31:05.891641",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "icon": "time",
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "Timeclock",
+ "link_type": "DocType",
+ "links": [],
+ "modified": "2026-08-05 11:31:05.891641",
+ "modified_by": "Administrator",
+ "module": "Timeclock",
+ "name": "Timeclock",
+ "number_cards": [],
+ "owner": "Administrator",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "HR Manager"
+  }
+ ],
+ "sequence_id": 0.0,
+ "shortcuts": [
+  {
+   "doc_view": "",
+   "label": "Timeclock Settings",
+   "link_to": "Timeclock Settings",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "List",
+   "label": "Employees",
+   "link_to": "Employee",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "List",
+   "label": "Checkins",
+   "link_to": "Employee Checkin",
+   "type": "DocType"
+  },
+  {
+   "doc_view": "List",
+   "label": "Attendance",
+   "link_to": "Attendance",
+   "type": "DocType"
+  }
+ ],
+ "title": "Timeclock",
+ "type": "Workspace"
+}

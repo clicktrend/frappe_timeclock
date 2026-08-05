@@ -18,6 +18,17 @@ required_apps = ["hrms"]
 after_install = "timeclock.install.after_install"
 after_migrate = "timeclock.install.after_migrate"
 
+# App tile in the Desk launcher — admins only (employees never see the app)
+add_to_apps_screen = [
+	{
+		"name": "timeclock",
+		"logo": "/assets/timeclock/logo.svg",
+		"title": "Timeclock",
+		"route": "/app/timeclock",
+		"has_permission": "timeclock.permissions.has_app_permission",
+	}
+]
+
 # HR buttons (Generate/Print Badge) on the Employee form
 doctype_js = {"Employee": "public/js/employee.js"}
 
