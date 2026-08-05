@@ -1,0 +1,51 @@
+{
+ "actions": [],
+ "creation": "2026-08-05 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "kiosk_section",
+  "show_camera_preview"
+ ],
+ "fields": [
+  {
+   "fieldname": "kiosk_section",
+   "fieldtype": "Section Break",
+   "label": "Kiosk"
+  },
+  {
+   "default": "0",
+   "description": "Privacy: by default the badge scanner works without showing the camera image, so employees never feel filmed. Enable this to show a live preview on the kiosk instead.",
+   "fieldname": "show_camera_preview",
+   "fieldtype": "Check",
+   "label": "Show Camera Preview on Kiosk"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-08-05 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Timeclock",
+ "name": "Timeclock Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "HR Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

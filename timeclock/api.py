@@ -20,6 +20,14 @@ def _check_kiosk_access():
 
 
 @frappe.whitelist()
+def get_kiosk_config():
+	"""Kiosk behaviour flags from Timeclock Settings (single)."""
+	_check_kiosk_access()
+	settings = frappe.get_cached_doc("Timeclock Settings")
+	return {"show_camera_preview": bool(settings.show_camera_preview)}
+
+
+@frappe.whitelist()
 def get_kiosk_employees():
 	"""Employees shown on the kiosk grid, with a suggested direction from their last log."""
 	_check_kiosk_access()

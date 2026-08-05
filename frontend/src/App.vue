@@ -29,17 +29,25 @@
 				</div>
 			</div>
 
-			<!-- Badge scanner panel. The camera IS active while scanning, but its image is
-			     deliberately never shown (privacy: nobody should feel filmed). The video
-			     element stays rendered at 1x1px/opacity-0 so frame grabbing keeps working.
-			     If the camera could not be started, the panel says so loudly instead. -->
+			<!-- Badge scanner panel. Privacy default: the camera scans WITHOUT showing its
+			     image (nobody should feel filmed) — the video element stays rendered at
+			     1x1px/opacity-0 so frame grabbing keeps working. Admins can opt into a live
+			     preview via Timeclock Settings ("Show Camera Preview on Kiosk"). If the
+			     camera could not be started, the panel says so loudly instead. -->
 			<aside
 				class="relative flex w-80 flex-col items-center justify-center gap-4 border-l border-gray-200 bg-white p-6 text-center"
 			>
-				<video ref="videoEl" class="pointer-events-none absolute h-px w-px opacity-0"></video>
+				<video
+					ref="videoEl"
+					:class="
+						showPreview && camAvailable
+							? 'aspect-square w-full rounded-xl bg-black object-cover'
+							: 'pointer-events-none absolute h-px w-px opacity-0'
+					"
+				></video>
 
 				<template v-if="camAvailable">
-					<div class="text-8xl" aria-hidden="true">🪪</div>
+					<div v-if="!showPreview" class="text-8xl" aria-hidden="true">🪪</div>
 					<div class="text-xl font-semibold text-gray-800">Badge vorhalten</div>
 					<div v-if="scanError" class="text-lg font-medium text-red-600">{{ scanError }}</div>
 					<div v-else-if="scanBusy" class="text-base text-gray-600">Wird gelesen …</div>
@@ -147,7 +155,7 @@
 <script setup>
 import { createResource } from "frappe-ui"
 import QrScanner from "qr-scanner"
-import { nextTick, onMounted, onUnmounted, ref, watch } from "vue"
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
 
 const DEVICE_ID = new URLSearchParams(window.location.search).get("device") || "kiosk"
 const CONFIRM_SECONDS = 5
@@ -167,6 +175,12 @@ const employees = createResource({
 	url: "timeclock.api.get_kiosk_employees",
 	auto: true,
 })
+
+const kioskConfig = createResource({
+	url: "timeclock.api.get_kiosk_config",
+	auto: true,
+})
+const showPreview = computed(() => Boolean(kioskConfig.data?.show_camera_preview))
 
 const punch = createResource({ url: "timeclock.api.punch" })
 const punchBadge = createResource({ url: "timeclock.api.punch_badge" })
