@@ -52,7 +52,10 @@ npm run build
 ## Setup
 
 1. **Enable employees:** Employee form → *Time Clock* tab → check *Time Clock Enabled*, set a PIN. For QR: *Generate Badge*, then *Print Badge* (or let employees scan the on-screen QR).
-2. **Create the kiosk user:** a Website User (e.g. `kiosk@yourcompany.com`) with only the **Timeclock Kiosk** role.
+2. **Create the kiosk user** — the shared login for the kiosk device(s):
+   - Desk → *New User* → email e.g. `kiosk@yourcompany.com`, user type **Website User** (no desk access), disable the welcome email and set a password
+   - assign exactly one role: **Timeclock Kiosk** (created by the app) — it gates the kiosk API and nothing else; the user cannot read employee data beyond the kiosk grid
+   - log in once on the kiosk device and open `/kiosk` — the session is long-lived, one kiosk user can serve any number of terminals (tell them apart via the `?device=` parameter)
 3. **Auto Attendance (once):** create a `Shift Type` with *Enable Auto Attendance* (working hours from *First Check-in and Last Check-out*, direction *Strictly based on Log Type*) and assign it to your employees — without a shift, checkins are recorded but no Attendance is created.
 4. **Open the kiosk:** log in as the kiosk user and open `https://yoursite/kiosk?device=front-door-1`. The `device` parameter is recorded on every punch and shown on the who's-in board.
 
