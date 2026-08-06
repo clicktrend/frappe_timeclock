@@ -4,11 +4,24 @@
 
 No proprietary hardware, no forked doctypes — a small app on top of plain Frappe HR.
 
+## Screenshots
+
+*All names shown are fictional demo data.*
+
+| Idle — clock & badge scan | Employee grid (PIN path) |
+| --- | --- |
+| ![Idle screen](docs/screenshots/shot-home.png) | ![Employee grid](docs/screenshots/shot-grid.png) |
+
+| PIN entry | Confirmation with undo |
+| --- | --- |
+| ![PIN entry](docs/screenshots/shot-pin.png) | ![Confirmation](docs/screenshots/shot-confirm.png) |
+
 ## Features
 
 **Kiosk (`/kiosk`)**
-- Employee grid → **Kommen/Gehen** (IN/OUT, pre-selected from the last punch) → touch PIN pad
-- **QR badge scanning** with the device camera — hybrid: the PIN path always stays available
+- **Clock-first idle screen** in a dark terminal look: big clock + date (synced to the **server clock**, so the display always matches the recorded punch time — even on a misconfigured tablet), badge prompt, one tap to the employee grid
+- Employee grid with **initials avatars and live presence** (green dot + "seit HH:MM" while clocked in) → **Kommen/Gehen** (pre-selected from the last punch) → touch PIN pad; falls back to the clock after 45 s of inactivity
+- **QR badge scanning** with the device camera — active on the idle screen and the grid; hybrid: the PIN path always stays available
 - Direction is toggled automatically on badge scans, with a **5-second undo**
 - **Privacy by default:** the camera scans without showing its image (a badge icon + "scanner ready" pulse instead); a live preview can be enabled in settings. If the camera cannot start, the kiosk says so loudly and falls back to PIN
 - Confirmation **sounds** (rising two-tone for IN, falling for OUT), toggleable
@@ -19,7 +32,7 @@ No proprietary hardware, no forked doctypes — a small app on top of plain Frap
 - Dashboard: **who's-in board** (name, in since, device), number cards (*present now, punches today, missing check-outs, absent today*) and a working-hours chart
 - **Time Clock tab on the Employee form:** enable flag, PIN (encrypted at rest, validated server-side), badge ID, inline **QR preview** and **badge printing** (86×54 mm card print format with server-rendered QR)
 - **Generate Badge** re-issues a random UUID — a lost card stops working immediately
-- `Timeclock Settings` single: camera preview, sounds
+- `Timeclock Settings` single: camera preview, sounds, kiosk language (German/English)
 
 **Integration & security**
 - Punches are standard **Employee Checkin** records (`log_type`, `time`, `device_id`) — HRMS **Auto Attendance** turns them into Attendance + working hours
@@ -80,15 +93,14 @@ cd apps/timeclock/frontend
 npm run dev
 ```
 
-Python code is formatted with `ruff` (tabs, line length 110, Frappe conventions).
+Python code is formatted with `ruff` (tabs, line length 110, Frappe conventions). Backend tests: `bench --site yoursite run-tests --app timeclock`. CI (GitHub Actions) runs lint, the frontend build and the server tests against Frappe v16 + HRMS.
 
-The kiosk UI is currently German-first; translations are on the roadmap.
+The kiosk UI ships in German and English — switch via *Timeclock Settings → Kiosk Language*. Backend error messages follow the kiosk user's language (German translations included).
 
 ## Roadmap
 
 - Wallet passes (Apple/Google) carrying the badge QR
 - Offline queue (service worker; punches sync with their original timestamp)
-- English/multi-language kiosk UI
 - Reduced badge-management view for supervisors without full HR permissions
 
 ## License
