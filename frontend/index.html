@@ -3,7 +3,12 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+		<meta name="theme-color" content="#0f1115" />
 		<title>Timeclock</title>
+		<!-- dark before the bundle loads — no white flash on the wall terminal -->
+		<style>
+			html { background: #0f1115; color-scheme: dark; }
+		</style>
 		<script>
 			window.csrf_token = "{{ csrf_token }}";
 		</script>
