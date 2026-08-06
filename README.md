@@ -41,7 +41,7 @@ bench --site yoursite install-app timeclock
 bench --site yoursite migrate
 ```
 
-The built frontend is **not** committed — build it once after getting the app:
+The built kiosk frontend ships with the repo — no Node step is needed for installation. If you develop on the frontend, rebuild before committing:
 
 ```bash
 cd apps/timeclock/frontend
