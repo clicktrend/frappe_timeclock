@@ -28,6 +28,7 @@ def get_kiosk_config():
 	return {
 		"show_camera_preview": bool(settings.show_camera_preview),
 		"play_sounds": bool(settings.play_sounds),
+		"language": settings.get("kiosk_language") or "de",
 		# site-timezone wall clock — the kiosk display syncs to this so the big
 		# clock always shows the same time that punches are recorded with
 		# (punch timestamps are server-side anyway, see _insert_checkin)

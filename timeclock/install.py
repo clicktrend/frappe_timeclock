@@ -76,7 +76,7 @@ def setup():
 
 # Check fields on a never-saved Single read as 0, silently ignoring the field's
 # declared default — seed defaults that differ from 0 once, explicitly.
-SETTINGS_DEFAULTS = {"play_sounds": 1}
+SETTINGS_DEFAULTS = {"play_sounds": 1, "kiosk_language": "de"}
 
 
 def _seed_settings_defaults():

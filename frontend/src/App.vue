@@ -14,21 +14,21 @@
 						<span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500/20"></span>
 						<span class="relative flex h-20 w-20 items-center justify-center rounded-full bg-zinc-900 text-5xl ring-1 ring-zinc-700">🪪</span>
 					</div>
-					<div class="text-xl font-medium text-zinc-200">Bitte Badge vorhalten</div>
+					<div class="text-xl font-medium text-zinc-200">{{ t("badge_prompt") }}</div>
 					<div v-if="scanError" class="text-lg font-medium text-red-400">{{ scanError }}</div>
-					<div v-else-if="scanBusy" class="text-base text-zinc-400">Wird gelesen …</div>
+					<div v-else-if="scanBusy" class="text-base text-zinc-400">{{ t("scanning") }}</div>
 					<div v-else class="flex items-center gap-2 text-sm text-zinc-500">
 						<span class="relative flex h-2 w-2">
 							<span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
 							<span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
 						</span>
-						Scanner bereit
+						{{ t("scanner_ready") }}
 					</div>
 				</template>
 				<template v-else>
 					<div class="text-6xl" aria-hidden="true">⚠️</div>
-					<div class="text-xl font-semibold text-amber-400">Badge-Scanner nicht bereit</div>
-					<div class="text-sm text-zinc-500">Bitte unten per Auswahl + PIN stempeln und den Admin informieren.</div>
+					<div class="text-xl font-semibold text-amber-400">{{ t("scanner_down_title") }}</div>
+					<div class="text-sm text-zinc-500">{{ t("scanner_down_hint") }}</div>
 				</template>
 			</div>
 
@@ -37,7 +37,7 @@
 				:class="camAvailable ? 'bg-zinc-900 text-zinc-200 ring-1 ring-zinc-700' : 'bg-blue-600 text-white'"
 				@click="screen = 'grid'"
 			>
-				Ohne Badge stempeln
+				{{ t("without_badge") }}
 			</button>
 
 			<!-- hidden (or preview) camera element — must stay rendered for frame grabbing -->
@@ -48,17 +48,17 @@
 		<main v-else-if="screen === 'grid'" class="flex min-h-0 flex-1 flex-col">
 			<header class="flex items-center justify-between border-b border-zinc-800 px-6 py-3">
 				<button class="flex items-center gap-2 rounded-xl px-4 py-2 text-lg text-zinc-300 transition active:scale-95 active:bg-zinc-800" @click="reset">
-					<span class="text-2xl leading-none">‹</span> Zurück
+					<span class="text-2xl leading-none">‹</span> {{ t("back") }}
 				</button>
-				<div class="text-lg font-medium text-zinc-400">Mitarbeiter wählen</div>
+				<div class="text-lg font-medium text-zinc-400">{{ t("choose_employee") }}</div>
 				<div class="font-mono text-2xl text-zinc-300">{{ clock }}</div>
 			</header>
 
 			<div class="min-h-0 flex-1 overflow-y-auto p-6">
-				<div v-if="employees.loading" class="mt-20 text-center text-lg text-zinc-400">Lade Mitarbeiter …</div>
+				<div v-if="employees.loading" class="mt-20 text-center text-lg text-zinc-400">{{ t("loading_employees") }}</div>
 				<div v-else-if="employees.error" class="mt-20 text-center text-lg text-red-400">
-					Keine Verbindung oder keine Berechtigung.<br />
-					<span class="text-sm text-zinc-500">Kiosk-Benutzer anmelden und Seite neu laden.</span>
+					{{ t("connection_error") }}<br />
+					<span class="text-sm text-zinc-500">{{ t("connection_hint") }}</span>
 				</div>
 				<div v-else class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
 					<button
@@ -80,7 +80,7 @@
 							></span>
 						</span>
 						<span class="px-2 text-center text-base font-medium leading-tight text-zinc-100">{{ emp.employee_name }}</span>
-						<span v-if="emp.last_log_type === 'IN'" class="text-xs text-emerald-400">seit {{ sinceLabel(emp.last_time) }}</span>
+						<span v-if="emp.last_log_type === 'IN'" class="text-xs text-emerald-400">{{ t("since") }} {{ sinceLabel(emp.last_time) }}</span>
 						<span v-else class="text-xs text-transparent">·</span>
 					</button>
 				</div>
@@ -120,7 +120,7 @@
 					@click="direction = dir"
 				>
 					<span aria-hidden="true">{{ dir === "IN" ? "➜" : "⬅" }}</span>
-					{{ dir === "IN" ? "Kommen" : "Gehen" }}
+					{{ dir === "IN" ? t("clock_in") : t("clock_out") }}
 				</button>
 			</div>
 
@@ -155,7 +155,7 @@
 				</button>
 			</div>
 
-			<button class="mt-2 text-lg text-zinc-500 underline" @click="reset">Abbrechen</button>
+			<button class="mt-2 text-lg text-zinc-500 underline" @click="reset">{{ t("cancel") }}</button>
 		</main>
 
 		<!-- Screen: confirmation (+ undo window) — name, action, big time -->
@@ -169,20 +169,20 @@
 			<div class="confirm-pop text-[5.5rem] leading-none text-white">✓</div>
 			<div class="text-[1.75rem] font-medium text-white/90">{{ result.employee_name }}</div>
 			<div class="text-[3.25rem] font-bold leading-tight text-white">
-				{{ result.log_type === "IN" ? "Kommt" : "Geht" }}
+				{{ result.log_type === "IN" ? t("came") : t("left") }}
 			</div>
 			<div class="mt-2 font-mono text-[4.5rem] font-semibold leading-none text-white">
-				{{ formatTime(result.time) }} Uhr
+				{{ formatTime(result.time) }}{{ t("time_suffix") }}
 			</div>
-			<div class="mt-2 text-[1.1rem] text-white/80">Zeit wurde erfolgreich gespeichert</div>
+			<div class="mt-2 text-[1.1rem] text-white/80">{{ t("saved") }}</div>
 			<button
 				v-if="undoLeft > 0"
 				class="mt-8 rounded-2xl bg-white/20 px-10 py-4 text-[1.4rem] font-medium text-white transition active:scale-95"
 				@click="doUndo"
 			>
-				Rückgängig ({{ undoLeft }})
+				{{ t("undo") }} ({{ undoLeft }})
 			</button>
-			<div v-if="undoDone" class="text-[1.2rem] text-white/90">Storniert.</div>
+			<div v-if="undoDone" class="text-[1.2rem] text-white/90">{{ t("undone") }}</div>
 		</main>
 	</div>
 </template>
@@ -192,6 +192,7 @@ import { createResource } from "frappe-ui"
 import QrScanner from "qr-scanner"
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
 
+import { LOCALES, MESSAGES } from "./i18n.js"
 import { playPunchSound, unlockSound } from "./sound.js"
 
 const DEVICE_ID = new URLSearchParams(window.location.search).get("device") || "kiosk"
@@ -220,6 +221,10 @@ const kioskConfig = createResource({
 })
 const showPreview = computed(() => Boolean(kioskConfig.data?.show_camera_preview))
 const soundsEnabled = computed(() => Boolean(kioskConfig.data?.play_sounds))
+
+const lang = computed(() => (kioskConfig.data?.language === "en" ? "en" : "de"))
+const locale = computed(() => LOCALES[lang.value])
+const t = (key) => MESSAGES[lang.value]?.[key] ?? MESSAGES.de[key] ?? key
 
 // The displayed clock is coupled to the SERVER clock (punch timestamps are
 // server-side — the display must never disagree with what gets recorded).
@@ -423,7 +428,7 @@ watch(screen, armIdleTimer)
 // ---- helpers ----
 
 function errorMessage(err) {
-	return err.messages?.[0] || err.message || "Fehler — bitte erneut versuchen"
+	return err.messages?.[0] || err.message || t("error_fallback")
 }
 
 // Only colors the frappe-ui preset actually ships (no rose/sky/indigo/fuchsia there)
@@ -464,7 +469,7 @@ function sinceLabel(lastTime) {
 	const m = String(localToday.getMonth() + 1).padStart(2, "0")
 	const d = String(localToday.getDate()).padStart(2, "0")
 	if (s.slice(0, 10) === `${y}-${m}-${d}`) return hhmm
-	const wd = new Date(s.replace(" ", "T")).toLocaleDateString("de-DE", { weekday: "short" })
+	const wd = new Date(s.replace(" ", "T")).toLocaleDateString(locale.value, { weekday: "short" })
 	return `${wd} ${hhmm}`
 }
 
@@ -476,7 +481,12 @@ let resyncTimer
 function tick() {
 	const now = new Date(Date.now() + clockOffset)
 	clock.value = now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
-	today.value = now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+	today.value = now.toLocaleDateString(locale.value, {
+		weekday: "long",
+		day: "numeric",
+		month: "long",
+		year: "numeric",
+	})
 }
 onMounted(() => {
 	tick()

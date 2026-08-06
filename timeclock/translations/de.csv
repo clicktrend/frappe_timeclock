@@ -1,0 +1,12 @@
+Employee is not enabled for the time clock,Mitarbeiter ist nicht für die Stempeluhr freigeschaltet
+Invalid log type,Ungültiger Stempeltyp
+Kiosk Auto-Login Token must be at least 20 characters long,Der Kiosk-Auto-Login-Token muss mindestens 20 Zeichen lang sein
+Missing badge,Badge fehlt
+No PIN is set for this employee. Please contact HR.,Für diesen Mitarbeiter ist keine PIN hinterlegt. Bitte an die Personalabteilung wenden.
+The kiosk auto-login user must not be a System Manager,Der Kiosk-Auto-Login-Benutzer darf kein System Manager sein
+The kiosk auto-login user needs the Timeclock Kiosk role,Der Kiosk-Auto-Login-Benutzer braucht die Rolle Timeclock Kiosk
+Too many unknown badges. Please wait a minute and try again.,Zu viele unbekannte Badges. Bitte eine Minute warten und erneut versuchen.
+Too many wrong attempts. Please wait a minute and try again.,Zu viele Fehlversuche. Bitte eine Minute warten und erneut versuchen.
+Undo window has expired,Das Zeitfenster zum Stornieren ist abgelaufen
+Unknown badge,Unbekanntes Badge
+Wrong PIN,Falsche PIN

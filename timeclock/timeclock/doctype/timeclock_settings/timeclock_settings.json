@@ -7,6 +7,7 @@
   "kiosk_section",
   "show_camera_preview",
   "play_sounds",
+  "kiosk_language",
   "kiosk_device_section",
   "kiosk_autologin_user",
   "kiosk_autologin_token"
@@ -30,6 +31,14 @@
    "fieldname": "play_sounds",
    "fieldtype": "Check",
    "label": "Play Sounds on Kiosk"
+  },
+  {
+   "default": "de",
+   "description": "Language of the kiosk UI (labels, dates, confirmation screen). Backend error messages follow the kiosk user's language.",
+   "fieldname": "kiosk_language",
+   "fieldtype": "Select",
+   "label": "Kiosk Language",
+   "options": "de\nen"
   },
   {
    "fieldname": "kiosk_device_section",
