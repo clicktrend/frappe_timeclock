@@ -6,7 +6,10 @@
  "field_order": [
   "kiosk_section",
   "show_camera_preview",
-  "play_sounds"
+  "play_sounds",
+  "kiosk_device_section",
+  "kiosk_autologin_user",
+  "kiosk_autologin_token"
  ],
  "fields": [
   {
@@ -27,12 +30,30 @@
    "fieldname": "play_sounds",
    "fieldtype": "Check",
    "label": "Play Sounds on Kiosk"
+  },
+  {
+   "fieldname": "kiosk_device_section",
+   "fieldtype": "Section Break",
+   "label": "Kiosk Auto-Login"
+  },
+  {
+   "description": "Kiosk terminals opening /kiosk?token=... are logged in as this user automatically. Must be a dedicated user with only the Timeclock Kiosk role.",
+   "fieldname": "kiosk_autologin_user",
+   "fieldtype": "Link",
+   "label": "Kiosk Auto-Login User",
+   "options": "User"
+  },
+  {
+   "description": "Shared secret for the kiosk start URL (min. 20 characters). Changing it locks out all devices immediately until their URL is updated.",
+   "fieldname": "kiosk_autologin_token",
+   "fieldtype": "Data",
+   "label": "Kiosk Auto-Login Token"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-08-05 13:00:00.000000",
+ "modified": "2026-08-06 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "Timeclock",
  "name": "Timeclock Settings",

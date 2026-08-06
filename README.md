@@ -56,6 +56,7 @@ npm run build
    - Desk → *New User* → email e.g. `kiosk@yourcompany.com`, user type **Website User** (no desk access), disable the welcome email and set a password
    - assign exactly one role: **Timeclock Kiosk** (created by the app) — it gates the kiosk API and nothing else; the user cannot read employee data beyond the kiosk grid
    - log in once on the kiosk device and open `/kiosk` — the session is long-lived, one kiosk user can serve any number of terminals (tell them apart via the `?device=` parameter)
+   - **or skip manual logins entirely with device auto-login:** in *Timeclock Settings* set *Kiosk Auto-Login User* + a *Kiosk Auto-Login Token* (min. 20 chars), then use `/kiosk?device=front-door-1&token=<token>` as the kiosk start URL. Devices heal themselves after reboots and session expiry; regenerating the token locks all devices out instantly. Auto-login refuses any account that has System Manager or lacks the Timeclock Kiosk role
 3. **Auto Attendance (once):** create a `Shift Type` with *Enable Auto Attendance* (working hours from *First Check-in and Last Check-out*, direction *Strictly based on Log Type*) and assign it to your employees — without a shift, checkins are recorded but no Attendance is created.
 4. **Open the kiosk:** log in as the kiosk user and open `https://yoursite/kiosk?device=front-door-1`. The `device` parameter is recorded on every punch and shown on the who's-in board.
 
@@ -63,7 +64,7 @@ npm run build
 
 Any Android 8+ tablet works. A proven setup:
 
-- [FreeKiosk](https://github.com/RushB-fr/freekiosk) (MIT) as the lockdown shell: WebView mode with the kiosk URL, Device Owner via `adb shell dpm set-device-owner`, boot autostart, admin PIN
+- [FreeKiosk](https://github.com/RushB-fr/freekiosk) (MIT) as the lockdown shell: WebView mode with the kiosk URL (ideally the auto-login URL incl. `&token=`, so nobody ever types credentials on the device), Device Owner via `adb shell dpm set-device-owner`, boot autostart, admin PIN. Note: FreeKiosk's built-in "Website Authentication" only answers HTTP Basic Auth challenges — it cannot fill the Frappe login form; use the token auto-login instead
 - Camera scanning needs a **secure context** — serve the site via HTTPS (or allow the origin explicitly in the shell)
 - Enable the vendor's **battery protection / charge limit** — the tablet is plugged in 24/7
 - Allow media autoplay in the WebView if you want confirmation sounds without a prior touch
