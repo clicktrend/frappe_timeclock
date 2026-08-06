@@ -246,7 +246,21 @@ async function startScanner() {
 	try {
 		scanner = new QrScanner(videoEl.value, onScan, {
 			returnDetailedScanResult: true,
-			maxScansPerSecond: 4,
+			maxScansPerSecond: 10,
+			// Default scan region is a centered square of 2/3 the frame, downscaled to
+			// 400px — badges held slightly off-center are simply not seen. Scan the full
+			// frame instead, downscaled proportionally to ~800px on the long edge.
+			calculateScanRegion: (video) => {
+				const scale = Math.min(1, 800 / Math.max(video.videoWidth, video.videoHeight))
+				return {
+					x: 0,
+					y: 0,
+					width: video.videoWidth,
+					height: video.videoHeight,
+					downScaledWidth: Math.round(video.videoWidth * scale),
+					downScaledHeight: Math.round(video.videoHeight * scale),
+				}
+			},
 		})
 		await scanner.start()
 		camAvailable.value = true
