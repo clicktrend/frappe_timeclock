@@ -6,6 +6,21 @@
 		size: 100mm 50mm;
 		margin: 0;
 	}
+	/* On-screen preview shows the label instead of an A4 sheet; the page-width/
+	   page-height/margin-* declarations double as wkhtmltopdf options — frappe
+	   parses them from .print-format styles for PDF generation. */
+	.print-format {
+		width: 100mm !important;
+		max-width: 100mm !important;
+		min-height: 50mm !important;
+		padding: 0 !important;
+		margin-top: 0;
+		margin-bottom: 0;
+		margin-left: 0;
+		margin-right: 0;
+		page-width: 100mm;
+		page-height: 50mm;
+	}
 	@media print {
 		html,
 		body {
