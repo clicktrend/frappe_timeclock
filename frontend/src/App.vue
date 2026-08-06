@@ -221,6 +221,21 @@ const kioskConfig = createResource({
 const showPreview = computed(() => Boolean(kioskConfig.data?.show_camera_preview))
 const soundsEnabled = computed(() => Boolean(kioskConfig.data?.play_sounds))
 
+// The displayed clock is coupled to the SERVER clock (punch timestamps are
+// server-side — the display must never disagree with what gets recorded).
+// server_time is site-timezone wall time; parsing it as local makes the kiosk
+// show site time even if the tablet's clock or timezone is misconfigured.
+let clockOffset = 0
+watch(
+	() => kioskConfig.data,
+	(data) => {
+		const raw = String(data?.server_time || "")
+		const parsed = Date.parse(raw.split(".")[0].replace(" ", "T"))
+		if (!Number.isNaN(parsed)) clockOffset = parsed - Date.now()
+		tick()
+	}
+)
+
 const punch = createResource({ url: "timeclock.api.punch" })
 const punchBadge = createResource({ url: "timeclock.api.punch_badge" })
 const undoPunch = createResource({ url: "timeclock.api.undo_punch" })
@@ -444,7 +459,7 @@ function formatTime(time) {
 function sinceLabel(lastTime) {
 	const s = String(lastTime || "")
 	const hhmm = s.slice(11, 16)
-	const localToday = new Date()
+	const localToday = new Date(Date.now() + clockOffset)
 	const y = localToday.getFullYear()
 	const m = String(localToday.getMonth() + 1).padStart(2, "0")
 	const d = String(localToday.getDate()).padStart(2, "0")
@@ -453,18 +468,22 @@ function sinceLabel(lastTime) {
 	return `${wd} ${hhmm}`
 }
 
-// Live clock + date
+// Live clock + date (server-synced via clockOffset)
 const clock = ref("")
 const today = ref("")
 let clockTimer
+let resyncTimer
 function tick() {
-	const now = new Date()
+	const now = new Date(Date.now() + clockOffset)
 	clock.value = now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
 	today.value = now.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
 }
 onMounted(() => {
 	tick()
 	clockTimer = setInterval(tick, 5_000)
+	// hourly re-sync keeps the offset fresh (drift, DST) and picks up
+	// Timeclock Settings changes without a page reload
+	resyncTimer = setInterval(() => kioskConfig.reload(), 3_600_000)
 	startScanner()
 	// browsers unlock audio only after a user gesture; badge-only users may never
 	// tap, so grab the very first pointer contact anywhere on the page
@@ -474,6 +493,7 @@ onMounted(() => {
 })
 onUnmounted(() => {
 	clearInterval(clockTimer)
+	clearInterval(resyncTimer)
 	clearInterval(undoTimer)
 	clearTimeout(idleTimer)
 	window.removeEventListener("pointerdown", armIdleTimer)
