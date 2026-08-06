@@ -1,45 +1,84 @@
 <style>
-	.timeclock-badge {
-		width: 86mm;
-		height: 54mm;
-		border: 0.3mm solid #ccc;
-		border-radius: 3mm;
-		padding: 5mm;
+	/* Zebra label printer: one 100x50mm label per badge, card centered. The card
+	   itself keeps credit-card width (86mm) — the rounded border doubles as a
+	   cutting guide for trimming the label down to the card. */
+	@page {
+		size: 100mm 50mm;
+		margin: 0;
+	}
+	@media print {
+		html,
+		body {
+			margin: 0 !important;
+			padding: 0 !important;
+		}
+		.print-format {
+			margin: 0 !important;
+			padding: 0 !important;
+			min-height: 0 !important;
+			box-shadow: none !important;
+		}
+	}
+	.timeclock-label {
+		width: 100mm;
+		height: 50mm;
 		display: flex;
 		align-items: center;
-		gap: 6mm;
-		font-family: sans-serif;
+		justify-content: center;
 		page-break-inside: avoid;
+	}
+	.timeclock-badge {
+		width: 86mm;
+		height: 50mm;
+		box-sizing: border-box;
+		border: 0.4mm solid #999;
+		border-radius: 3mm;
+		padding: 4mm;
+		display: flex;
+		align-items: center;
+		gap: 5mm;
+		font-family: sans-serif;
+		background: #fff;
+	}
+	.timeclock-badge .qr {
+		width: 40mm;
+		height: 40mm;
+		flex-shrink: 0;
 	}
 	.timeclock-badge .qr svg {
 		width: 40mm;
 		height: 40mm;
+		display: block;
 	}
 	.timeclock-badge .meta {
 		flex: 1;
 		min-width: 0;
 	}
 	.timeclock-badge .meta .name {
-		font-size: 14pt;
+		font-size: 12pt;
 		font-weight: 600;
-		margin-bottom: 2mm;
+		margin-bottom: 1.5mm;
+		line-height: 1.15;
 	}
 	.timeclock-badge .meta .sub {
-		font-size: 9pt;
+		font-size: 8pt;
 		color: #555;
+		line-height: 1.3;
 	}
 </style>
 
 {% if not doc.timeclock_badge_id %}
 	<p>{{ _("No badge issued yet — use 'Generate Badge' on the Employee form first.") }}</p>
 {% else %}
-	<div class="timeclock-badge">
-		<div class="qr">{{ timeclock_badge_qr_svg(doc.name) }}</div>
-		<div class="meta">
-			<div class="name">{{ doc.employee_name }}</div>
-			<div class="sub">{{ doc.designation or "" }}</div>
-			<div class="sub">{{ doc.company }}</div>
-			<div class="sub">{{ doc.name }}</div>
+	<div class="timeclock-label">
+		<div class="timeclock-badge">
+			<div class="qr">{{ timeclock_badge_qr_svg(doc.name) }}</div>
+			<div class="meta">
+				<div class="name">{{ doc.employee_name }}</div>
+				<div class="sub">{{ doc.designation or "" }}</div>
+				<div class="sub">{{ doc.company }}</div>
+				<div class="sub">{{ doc.name }}</div>
+			</div>
 		</div>
 	</div>
 {% endif %}
