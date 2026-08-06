@@ -42,6 +42,9 @@ jinja = {"methods": ["timeclock.badge.timeclock_badge_qr_svg"]}
 # biometric sync tool advances that field).
 scheduler_events = {"hourly": ["timeclock.tasks.update_last_sync_of_checkin"]}
 
+# CI: bootstrap a bare test site via the HRMS setup helper (no-op on set-up sites)
+before_tests = "timeclock.tests.utils.before_tests"
+
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
 # 	{
