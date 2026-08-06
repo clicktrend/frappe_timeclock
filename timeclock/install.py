@@ -264,6 +264,8 @@ WORKSPACE_SHORTCUTS = [
 	},
 	{"label": "Checkins", "link_to": "Employee Checkin", "type": "DocType", "doc_view": "List"},
 	{"label": "Attendance", "link_to": "Attendance", "type": "DocType", "doc_view": "List"},
+	# opens the actual kiosk page — handy for admins to preview or to grab the URL
+	{"label": "Open Kiosk", "type": "URL", "url": "/kiosk"},
 ]
 
 
