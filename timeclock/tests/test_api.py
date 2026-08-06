@@ -27,6 +27,7 @@ def _get_or_make_company():
 			"company_name": "Timeclock Test Co",
 			"abbr": "TTC",
 			"default_currency": "EUR",
+			"country": "Germany",
 		}
 	).insert(ignore_permissions=True)
 	return doc.name
