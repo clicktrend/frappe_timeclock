@@ -82,7 +82,7 @@ Any Android 8+ tablet works. A proven setup — **step-by-step guide incl. all t
 | Device | Notes |
 | --- | --- |
 | Desktop browser + webcam | Chrome/Chromium with any standard webcam — handy for development and evaluation (camera needs `localhost` or HTTPS) |
-| Samsung Galaxy Tab A11+ (SM-X230, 11″) | Reference production device, wall-mounted with FreeKiosk. 3D-printable wall mount: [MakerWorld — Wall Mount Samsung Tab A11](https://makerworld.com/en/models/2973635-wall-mount-samsung-tab-a11?from=search#profileId-3335232) |
+| Samsung Galaxy Tab A11+ (SM-X230, 11″) | ✅ **Verified in production** — wall-mounted with FreeKiosk in Device Owner mode; the front camera reads the 40 mm badge QR in well under a second. 3D-printable wall mount: [MakerWorld — Wall Mount Samsung Tab A11](https://makerworld.com/en/models/2973635-wall-mount-samsung-tab-a11?from=search#profileId-3335232) |
 
 - [FreeKiosk](https://github.com/RushB-fr/freekiosk) (MIT) as the lockdown shell: WebView mode with the kiosk URL (ideally the auto-login URL incl. `&token=`, so nobody ever types credentials on the device), Device Owner via `adb shell dpm set-device-owner`, boot autostart, admin PIN. Note: FreeKiosk's built-in "Website Authentication" only answers HTTP Basic Auth challenges — it cannot fill the Frappe login form; use the token auto-login instead
 - Camera scanning needs a **secure context** — serve the site via HTTPS (or allow the origin explicitly in the shell)
