@@ -75,7 +75,7 @@ npm run build
 
 ### Android tablet (kiosk mode)
 
-Any Android 8+ tablet works. A proven setup:
+Any Android 8+ tablet works. A proven setup — **step-by-step guide incl. all traps: [docs/freekiosk-setup.md](docs/freekiosk-setup.md)**:
 
 #### Tested devices
 
