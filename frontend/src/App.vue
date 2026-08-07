@@ -311,6 +311,9 @@ async function startScanner() {
 	try {
 		scanner = new QrScanner(videoEl.value, onScan, {
 			returnDetailedScanResult: true,
+			// wall terminal: badges are held towards the SCREEN, so use the front
+			// camera (qr-scanner defaults to the back camera, 'environment')
+			preferredCamera: "user",
 			maxScansPerSecond: 10,
 			// Default scan region is a centered square of 2/3 the frame, downscaled to
 			// 400px — badges held slightly off-center are simply not seen. Scan the full
