@@ -36,7 +36,7 @@ No proprietary hardware, no forked doctypes — a small app on top of plain Frap
 
 **Integration & security**
 - Punches are standard **Employee Checkin** records (`log_type`, `time`, `device_id`) — HRMS **Auto Attendance** turns them into Attendance + working hours
-- An hourly task keeps `Shift Type.last_sync_of_checkin` current, so realtime kiosk punches are actually processed (normally only biometric sync tools advance that field)
+- No custom processing and no scheduler jobs of its own: HRMS' *Auto Update Last Sync* option on the Shift Type advances `last_sync_of_checkin` for realtime punches (see Setup)
 - PIN comparison is constant-time and server-side, with per-employee lockout after 5 failed attempts; unknown badges are rate-limited per device
 - Badges are random 128-bit UUIDs, never the employee number
 - The kiosk runs under a dedicated user with the **Timeclock Kiosk** role — no desk access, no employee data beyond the grid
@@ -71,6 +71,7 @@ npm run build
    - log in once on the kiosk device and open `/kiosk` — the session is long-lived, one kiosk user can serve any number of terminals (tell them apart via the `?device=` parameter)
    - **or skip manual logins entirely with device auto-login:** in *Timeclock Settings* set *Kiosk Auto-Login User* + a *Kiosk Auto-Login Token* (min. 20 chars), then use `/kiosk?device=front-door-1&token=<token>` as the kiosk start URL. Devices heal themselves after reboots and session expiry; regenerating the token locks all devices out instantly. Auto-login refuses any account that has System Manager or lacks the Timeclock Kiosk role
 3. **Auto Attendance (once):** create a `Shift Type` with *Enable Auto Attendance* (working hours from *First Check-in and Last Check-out*, direction *Strictly based on Log Type*) and assign it to your employees — without a shift, checkins are recorded but no Attendance is created.
+   **Also tick *Auto Update Last Sync* on that Shift Type.** HRMS only processes checkins up to `last_sync_of_checkin`, and that field is normally advanced by a biometric sync tool. The checkbox lets HRMS' own hourly job advance it (clamped to the end of each shift) — without it, kiosk punches are recorded but never turn into Attendance.
 4. **Open the kiosk:** log in as the kiosk user and open `https://yoursite/kiosk?device=front-door-1`. The `device` parameter is recorded on every punch and shown on the who's-in board.
 
 ### Android tablet (kiosk mode)

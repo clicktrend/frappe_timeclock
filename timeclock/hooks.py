@@ -37,10 +37,12 @@ doctype_list_js = {"Employee": "public/js/employee_list.js"}
 # QR rendering for the 'Timeclock Badge' print format
 jinja = {"methods": ["timeclock.badge.timeclock_badge_qr_svg"]}
 
-# The kiosk writes checkins in realtime; keep Shift Type.last_sync_of_checkin
-# current so HRMS auto attendance actually processes them (normally the
-# biometric sync tool advances that field).
-scheduler_events = {"hourly": ["timeclock.tasks.update_last_sync_of_checkin"]}
+# No scheduler_events on purpose. Realtime punches are only picked up by auto
+# attendance once Shift Type.last_sync_of_checkin advances past them — but that
+# field belongs to HRMS, which ships its own hourly_long job for it and gates it
+# behind the per-shift "Auto Update Last Sync" checkbox. Advancing it from here
+# would override that opt-out for every shift on the site, including ones fed by
+# a biometric device. Tick the checkbox instead (see Setup in the README).
 
 # CI: bootstrap a bare test site via the HRMS setup helper (no-op on set-up sites)
 before_tests = "timeclock.tests.utils.before_tests"

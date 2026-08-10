@@ -6,7 +6,7 @@
    "label": "Timeclock Arbeitsstunden"
   }
  ],
- "content": "[{\"id\": \"tcHeader\", \"type\": \"header\", \"data\": {\"text\": \"<span class='h4'><b>Timeclock</b></span>\", \"col\": 12}}, {\"id\": \"tcCard0\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Jetzt anwesend\", \"col\": 3}}, {\"id\": \"tcCard1\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Heute gestempelt\", \"col\": 3}}, {\"id\": \"tcCard2\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Fehlende OUT-Stempel\", \"col\": 3}}, {\"id\": \"tcCard3\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Abwesend heute\", \"col\": 3}}, {\"id\": \"tcWhoIsIn\", \"type\": \"custom_block\", \"data\": {\"custom_block_name\": \"Timeclock Who's In\", \"col\": 12}}, {\"id\": \"tcChart\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Timeclock Arbeitsstunden\", \"col\": 12}}, {\"id\": \"tcSpacer\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"tcShortcut0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Timeclock Settings\", \"col\": 3}}, {\"id\": \"tcShortcut1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Employees\", \"col\": 3}}, {\"id\": \"tcShortcut2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Checkins\", \"col\": 3}}, {\"id\": \"tcShortcut3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Attendance\", \"col\": 3}}]",
+ "content": "[{\"id\": \"tcHeader\", \"type\": \"header\", \"data\": {\"text\": \"<span class='h4'><b>Timeclock</b></span>\", \"col\": 12}}, {\"id\": \"tcCard0\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Jetzt anwesend\", \"col\": 3}}, {\"id\": \"tcCard1\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Heute gestempelt\", \"col\": 3}}, {\"id\": \"tcCard2\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Fehlende OUT-Stempel\", \"col\": 3}}, {\"id\": \"tcCard3\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Abwesend heute\", \"col\": 3}}, {\"id\": \"tcWhoIsIn\", \"type\": \"custom_block\", \"data\": {\"custom_block_name\": \"Timeclock Who's In\", \"col\": 12}}, {\"id\": \"tcChart\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Timeclock Arbeitsstunden\", \"col\": 12}}, {\"id\": \"tcSpacer\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"tcShortcut0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Timeclock Settings\", \"col\": 3}}, {\"id\": \"tcShortcut1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Employees\", \"col\": 3}}, {\"id\": \"tcShortcut2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Checkins\", \"col\": 3}}, {\"id\": \"tcShortcut3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Attendance\", \"col\": 3}}, {\"id\": \"tcShortcut4\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Open Kiosk\", \"col\": 3}}]",
  "creation": "2026-08-05 11:31:05.891641",
  "custom_blocks": [
   {
@@ -24,7 +24,7 @@
  "label": "Timeclock",
  "link_type": "DocType",
  "links": [],
- "modified": "2026-08-06 11:27:23.971363",
+ "modified": "2026-08-10 16:46:40.333020",
  "modified_by": "Administrator",
  "module": "Timeclock",
  "name": "Timeclock",
@@ -83,6 +83,12 @@
    "label": "Attendance",
    "link_to": "Attendance",
    "type": "DocType"
+  },
+  {
+   "doc_view": "",
+   "label": "Open Kiosk",
+   "type": "URL",
+   "url": "/kiosk"
   }
  ],
  "title": "Timeclock",

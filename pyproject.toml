@@ -9,6 +9,9 @@ readme = "README.md"
 dynamic = ["version"]
 dependencies = [
     # "frappe~=16.0.0" # Installed and managed by bench.
+    # Server-side badge QR rendering (timeclock/badge.py). Frappe happens to ship
+    # it today, but that is its dependency to drop — declare our own.
+    "pyqrcode",
 ]
 
 [build-system]
