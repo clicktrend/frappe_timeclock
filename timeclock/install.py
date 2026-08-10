@@ -85,7 +85,7 @@ def _seed_settings_defaults():
 			"Singles", {"doctype": "Timeclock Settings", "field": field}, "value", order_by=None
 		)
 		if stored is None:
-			frappe.db.set_value("Timeclock Settings", None, field, value)
+			frappe.db.set_single_value("Timeclock Settings", field, value)
 	frappe.clear_document_cache("Timeclock Settings", "Timeclock Settings")
 
 
@@ -271,7 +271,16 @@ WORKSPACE_SHORTCUTS = [
 
 def _ensure_workspace():
 	"""Admin workspace (settings + employee/PIN/badge management), restricted via
-	workspace roles — regular employees never see it. Idempotent on migrate."""
+	workspace roles — regular employees never see it. Idempotent on migrate.
+
+	Built here rather than hand-written as a module JSON on purpose: the layout wires
+	up the number cards, the chart and the custom block created above, so it has to
+	be derived from the same constants.
+
+	timeclock/workspace/timeclock/timeclock.json is NOT a second source of truth — it
+	is what frappe auto-exports on save under developer_mode (modules/utils.py
+	export_module_json). Migrate imports it first, then this function rewrites the
+	doc from the constants above. Edit the Python; the JSON follows on the next save."""
 	content = [
 		{
 			"id": "tcHeader",
@@ -344,17 +353,28 @@ def _ensure_workspace():
 
 
 def _ensure_app_tile():
-	"""Frappe v16 creates /desk app tiles only in after_app_install, so re-ensure the
-	Timeclock tile on every migrate (pattern proven in the adomio app). The workspace
-	auto-shortcut may claim the doc name 'Timeclock' (Desktop Icon name == label) and
-	collide with the app tile — drop it first."""
-	from frappe.desk.doctype.desktop_icon.desktop_icon import create_desktop_icons_from_installed_apps
+	"""Frappe creates /desk app tiles from add_to_apps_screen in after_app_install only,
+	and no after_migrate hook restores a missing one — so re-ensure the tile here.
 
+	The tile is created by whatever frappe currently declares for after_app_install,
+	looked up from its own hooks instead of importing the underlying function: that
+	name has already moved once (auto_generate_icons_and_sidebar ->
+	create_desktop_icons_for_app) and gained a gate along the way, which this inherits.
+	Failures are logged, never raised — a cosmetic desk tile must not be able to abort
+	`bench migrate` on every site that has this app installed.
+
+	The workspace auto-shortcut may claim the doc name 'Timeclock' (Desktop Icon is
+	autonamed from its label) and collide with the app tile — drop it first."""
 	stale_icon_type = frappe.db.get_value("Desktop Icon", WORKSPACE, "icon_type")
 	if stale_icon_type and stale_icon_type != "App":
 		frappe.delete_doc("Desktop Icon", WORKSPACE, ignore_permissions=True)
 
-	create_desktop_icons_from_installed_apps()
+	try:
+		for method in frappe.get_hooks("after_app_install", app_name="frappe"):
+			frappe.get_attr(method)("timeclock")
+	except Exception:
+		frappe.log_error(title="Timeclock: could not ensure the desk app tile")
+		return
 
 	frappe.cache.delete_key("desktop_icons")
 	frappe.cache.delete_key("bootinfo")
