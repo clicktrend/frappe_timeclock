@@ -85,7 +85,7 @@ def _seed_settings_defaults():
 			"Singles", {"doctype": "Timeclock Settings", "field": field}, "value", order_by=None
 		)
 		if stored is None:
-			frappe.db.set_value("Timeclock Settings", None, field, value)
+			frappe.db.set_single_value("Timeclock Settings", field, value)
 	frappe.clear_document_cache("Timeclock Settings", "Timeclock Settings")
 
 
@@ -271,7 +271,16 @@ WORKSPACE_SHORTCUTS = [
 
 def _ensure_workspace():
 	"""Admin workspace (settings + employee/PIN/badge management), restricted via
-	workspace roles — regular employees never see it. Idempotent on migrate."""
+	workspace roles — regular employees never see it. Idempotent on migrate.
+
+	Built here rather than hand-written as a module JSON on purpose: the layout wires
+	up the number cards, the chart and the custom block created above, so it has to
+	be derived from the same constants.
+
+	timeclock/workspace/timeclock/timeclock.json is NOT a second source of truth — it
+	is what frappe auto-exports on save under developer_mode (modules/utils.py
+	export_module_json). Migrate imports it first, then this function rewrites the
+	doc from the constants above. Edit the Python; the JSON follows on the next save."""
 	content = [
 		{
 			"id": "tcHeader",
