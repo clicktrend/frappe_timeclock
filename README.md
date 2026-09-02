@@ -122,6 +122,9 @@ bench --site yoursite execute hrms.hr.doctype.shift_type.shift_type.update_last_
 bench --site yoursite execute hrms.hr.doctype.shift_type.shift_type.process_auto_attendance_for_all_shifts
 ```
 
+**The kiosk shows "No connection to the server".**
+The site did not answer. A deployment, a restart, a reverse proxy's error page and a dropped network all look identical from the kiosk, and it deliberately does not try to tell them apart — every operator signals them differently. It retries every 15 seconds and recovers by itself; no reload and no reboot needed. Punching is impossible in the meantime, which is why the *clock in without badge* button is disabled while the notice is up.
+
 **The camera panel stays empty / no QR is read.**
 `getUserMedia` requires a secure context: serve the site over HTTPS, or use `http://localhost` while developing. A camera already claimed by another app also yields an empty panel.
 
@@ -152,7 +155,7 @@ A wall terminal is a trust-by-convenience device. It is worth being explicit abo
 
 - **A PIN or a badge identifies, it does not authenticate.** Anyone who watches you type your PIN or photographs your badge QR can punch for you. Timeclock does not try to prevent buddy punching — there is no biometry and none is planned. What it offers instead is traceability: every punch carries its `device_id`, the who's-in board makes presence visible in real time, and *Generate Badge* invalidates a copied card immediately.
 - **Rejected scans leave no trace.** An unknown badge, or an employee who is not enabled, gets an error on screen and nothing is written anywhere. So *"but I did clock in"* cannot be checked afterwards, and a badge still in circulation after someone has left goes unnoticed. A quarantine log is on the roadmap.
-- **No offline mode.** If the network or the site is down, the terminal cannot punch. That is a deliberate trade for now: every recorded time comes from the **server** clock, never from the tablet — the kiosk display is merely synced to it, so a device with the wrong time zone still records correctly. An offline queue breaks that guarantee, which is why it is designed as a review step rather than a direct write (see Roadmap).
+- **No offline mode.** If the network or the site is down, the terminal cannot punch. That is a deliberate trade for now: every recorded time comes from the **server** clock, never from the tablet — the kiosk display is merely synced to it, so a device with the wrong time zone still records correctly. An offline queue breaks that guarantee, which is why it is designed as a review step rather than a direct write (see Roadmap). While the site is unreachable the kiosk says so plainly, disables the PIN path so nobody walks into a dead end, and retries every 15 seconds — it comes back on its own after a deployment, without anyone touching the tablet.
 - **The kiosk device is trusted.** The auto-login token is a long-lived shared credential: whoever holds the URL can list employee names and punch with a valid PIN or badge. Treat it like a password, keep it on managed devices, and rotate it — which locks out every terminal at once, by design.
 - **Turning punches into attendance is HRMS' job, not this app's.** Timeclock adds no rules of its own; working hours, overtime and shift handling depend entirely on your Shift Type setup, including the one checkbox that fails silently (see Troubleshooting).
 - **No compliance claims.** Recording punches is not the same as meeting your jurisdiction's working-time documentation duties. Review that with whoever is responsible for it.
