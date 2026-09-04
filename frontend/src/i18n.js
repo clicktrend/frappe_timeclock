@@ -27,6 +27,9 @@ export const MESSAGES = {
 		undo: "Rückgängig",
 		undone: "Storniert.",
 		error_fallback: "Fehler — bitte erneut versuchen",
+		server_unreachable: "Server nicht erreichbar — bitte gleich noch einmal versuchen.",
+		offline_title: "Keine Verbindung zum Server",
+		offline_hint: "Stempeln ist gerade nicht möglich. Das Terminal versucht es automatisch weiter.",
 	},
 	en: {
 		badge_prompt: "Please hold your badge to the camera",
@@ -51,5 +54,8 @@ export const MESSAGES = {
 		undo: "Undo",
 		undone: "Cancelled.",
 		error_fallback: "Error — please try again",
+		server_unreachable: "Server not reachable — please try again in a moment.",
+		offline_title: "No connection to the server",
+		offline_hint: "Clocking in is not possible right now. The terminal keeps retrying automatically.",
 	},
 }

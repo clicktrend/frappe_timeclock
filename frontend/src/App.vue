@@ -9,7 +9,12 @@
 
 			<!-- Badge prompt / scanner state -->
 			<div class="mt-12 flex flex-col items-center gap-3">
-				<template v-if="camAvailable">
+				<template v-if="offline">
+					<div class="text-6xl" aria-hidden="true">⚠️</div>
+					<div class="text-xl font-semibold text-amber-400">{{ t("offline_title") }}</div>
+					<div class="text-sm text-zinc-500">{{ t("offline_hint") }}</div>
+				</template>
+				<template v-else-if="camAvailable">
 					<div class="relative flex h-24 w-24 items-center justify-center">
 						<span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500/20"></span>
 						<span class="relative flex h-20 w-20 items-center justify-center rounded-full bg-zinc-900 text-5xl ring-1 ring-zinc-700">🪪</span>
@@ -33,8 +38,9 @@
 			</div>
 
 			<button
-				class="mt-12 rounded-2xl px-10 py-5 text-xl font-medium shadow-lg transition active:scale-95"
+				class="mt-12 rounded-2xl px-10 py-5 text-xl font-medium shadow-lg transition active:scale-95 disabled:opacity-40 disabled:active:scale-100"
 				:class="camAvailable ? 'bg-zinc-900 text-zinc-200 ring-1 ring-zinc-700' : 'bg-blue-600 text-white'"
+				:disabled="offline"
 				@click="screen = 'grid'"
 			>
 				{{ t("without_badge") }}
@@ -210,15 +216,8 @@ const result = ref(null)
 const undoLeft = ref(0)
 const undoDone = ref(false)
 
-const employees = createResource({
-	url: "timeclock.api.get_kiosk_employees",
-	auto: true,
-})
-
-const kioskConfig = createResource({
-	url: "timeclock.api.get_kiosk_config",
-	auto: true,
-})
+const employees = createResource({ url: "timeclock.api.get_kiosk_employees" })
+const kioskConfig = createResource({ url: "timeclock.api.get_kiosk_config" })
 const showPreview = computed(() => Boolean(kioskConfig.data?.show_camera_preview))
 const soundsEnabled = computed(() => Boolean(kioskConfig.data?.play_sounds))
 
@@ -278,7 +277,7 @@ async function submit() {
 			})
 		)
 	} catch (err) {
-		error.value = errorMessage(err)
+		error.value = noteError(err)
 		pin.value = ""
 	} finally {
 		punching.value = false
@@ -357,7 +356,7 @@ async function onScan(scanResult) {
 	try {
 		showResult(await punchBadge.submit({ badge_id: code, device_id: DEVICE_ID }))
 	} catch (err) {
-		scanError.value = errorMessage(err)
+		scanError.value = noteError(err)
 		clearTimeout(scanErrorTimer)
 		scanErrorTimer = setTimeout(() => (scanError.value = ""), 3000)
 	} finally {
@@ -399,7 +398,7 @@ async function doUndo() {
 		await undoPunch.submit({ checkin: result.value.name, device_id: DEVICE_ID })
 		undoDone.value = true
 	} catch (err) {
-		scanError.value = errorMessage(err)
+		scanError.value = noteError(err)
 	}
 	setTimeout(reset, 1500)
 }
@@ -412,7 +411,7 @@ function reset() {
 	error.value = ""
 	undoDone.value = false
 	undoLeft.value = 0
-	employees.reload()
+	refresh(employees)
 }
 
 // ---- idle fallback: grid/pin return to the clock after inactivity ----
@@ -428,9 +427,62 @@ function armIdleTimer() {
 
 watch(screen, armIdleTimer)
 
+// ---- connection state ----
+// The kiosk cannot tell *why* the site stopped answering: a proxy error page, a
+// restart during a deployment and a dropped network all look identical from here,
+// and every operator signals them differently. So there is exactly one state —
+// "we are not being served" — and it clears itself once a request works again.
+
+const RECONNECT_MS = 15_000
+const offline = ref(false)
+let reconnectTimer = null
+
+// A Frappe error carries `messages` or `exc_type`. Anything else — an HTML error
+// page that never parsed as JSON, an aborted request — is a transport problem.
+// Without this test the kiosk puts a raw JavaScript message on the wall.
+function isTransportError(err) {
+	return !(err?.messages?.length || err?.exc_type)
+}
+
+function goOffline() {
+	if (offline.value) return
+	offline.value = true
+	reconnectTimer = setInterval(tryReconnect, RECONNECT_MS)
+}
+
+// `resource.reload()` records the error AND rethrows it, and no call site awaits
+// it — without this wrapper a terminal running for weeks collects unhandled
+// rejections, the only forensic trail it has.
+function refresh(resource) {
+	return resource.reload().catch(goOffline)
+}
+
+// Retry with the request the kiosk needs anyway and judge it by whether it
+// returned data — no reading of status codes, which every setup uses differently.
+async function tryReconnect() {
+	await refresh(kioskConfig)
+	if (kioskConfig.error) return
+	clearInterval(reconnectTimer)
+	reconnectTimer = null
+	offline.value = false
+	error.value = ""
+	scanError.value = ""
+	refresh(employees)
+}
+
+// the auto-fetched resources fail on their own, without passing through noteError
+watch([() => employees.error, () => kioskConfig.error], ([empError, configError]) => {
+	if (empError || configError) goOffline()
+})
+
 // ---- helpers ----
 
-function errorMessage(err) {
+// Records the connection state as a side effect — hence not just "errorMessage".
+function noteError(err) {
+	if (isTransportError(err)) {
+		goOffline()
+		return t("server_unreachable")
+	}
 	return err.messages?.[0] || err.message || t("error_fallback")
 }
 
@@ -492,11 +544,13 @@ function tick() {
 	})
 }
 onMounted(() => {
+	refresh(kioskConfig)
+	refresh(employees)
 	tick()
 	clockTimer = setInterval(tick, 5_000)
 	// hourly re-sync keeps the offset fresh (drift, DST) and picks up
 	// Timeclock Settings changes without a page reload
-	resyncTimer = setInterval(() => kioskConfig.reload(), 3_600_000)
+	resyncTimer = setInterval(() => refresh(kioskConfig), 3_600_000)
 	startScanner()
 	// browsers unlock audio only after a user gesture; badge-only users may never
 	// tap, so grab the very first pointer contact anywhere on the page
@@ -507,6 +561,7 @@ onMounted(() => {
 onUnmounted(() => {
 	clearInterval(clockTimer)
 	clearInterval(resyncTimer)
+	clearInterval(reconnectTimer)
 	clearInterval(undoTimer)
 	clearTimeout(idleTimer)
 	window.removeEventListener("pointerdown", armIdleTimer)
