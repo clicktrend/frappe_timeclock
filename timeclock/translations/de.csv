@@ -1,12 +1,47 @@
+Book Anyway,Trotzdem buchen
+Book this punch as an Employee Checkin,Diesen Stempel als Employee Checkin buchen
+Book,Buchen
+Booked by {0} after review. Original reason: {1},Nach Prüfung gebucht von {0}. Ursprünglicher Grund: {1}
+Booked,Gebucht
+Check Attendance,Anwesenheit prüfen
+Could not be booked,Konnte nicht gebucht werden
+Discard this punch? It stays here for the record but is never booked.,"Stempel verwerfen? Er bleibt hier als Nachweis stehen, wird aber nie gebucht."
+Discard,Verwerfen
+Discarded by {0}. Original reason: {1},Verworfen von {0}. Ursprünglicher Grund: {1}
+Discarded,Verworfen
 Employee is not enabled for the time clock,Mitarbeiter ist nicht für die Stempeluhr freigeschaltet
+"Employee, log type and time are required to book this punch","Zum Buchen braucht der Stempel Mitarbeiter, Richtung und Zeit"
+Invalid device ID,Ungültige Geräte-ID
 Invalid log type,Ungültiger Stempeltyp
+Invalid punch ID,Ungültige Stempel-ID
+Invalid punch list,Ungültige Stempelliste
 Kiosk Auto-Login Token must be at least 20 characters long,Der Kiosk-Auto-Login-Token muss mindestens 20 Zeichen lang sein
+Kiosk Devices,Kiosk-Geräte
 Missing badge,Badge fehlt
 No PIN is set for this employee. Please contact HR.,Für diesen Mitarbeiter ist keine PIN hinterlegt. Bitte an die Personalabteilung wenden.
+Offline Punches,Offline-Stempel
+Older than the allowed offline period ({0} hours),Älter als die erlaubte Offline-Dauer ({0} Stunden)
+Only punches in quarantine can be booked,Nur Stempel in Quarantäne können gebucht werden
+Only punches in quarantine can be discarded,Nur Stempel in Quarantäne können verworfen werden
+Outdated,Veraltet
+Possible duplicate of {0},Mögliche Dublette von {0}
+Quarantine,Quarantäne
+Syncing,Überträgt
+The device clock was never matched with the server,Die Uhr des Geräts wurde nie mit dem Server abgeglichen
 The kiosk auto-login user must not be a System Manager,Der Kiosk-Auto-Login-Benutzer darf kein System Manager sein
 The kiosk auto-login user needs the Timeclock Kiosk role,Der Kiosk-Auto-Login-Benutzer braucht die Rolle Timeclock Kiosk
+The punch has no time,Der Stempel hat keine Zeit
+The punch time lies in the future,Die Stempelzeit liegt in der Zukunft
+The time clock {0} has not reported since {1}. Punches taken there now are stored on the tablet and booked once it is back online — unless it is switched off or has no power.,"Die Stempeluhr {0} meldet sich seit {1} nicht mehr. Stempel, die dort jetzt erfasst werden, speichert das Tablet und bucht sie nach, sobald es wieder online ist – außer es ist ausgeschaltet oder ohne Strom."
+"The time clock {0} is reachable again (offline since {1}, back at {2}).","Die Stempeluhr {0} ist wieder erreichbar (offline seit {1}, zurück um {2})."
+"These offline punches were booked, but their day already had an attendance (for example 'Absent' from the outage). Frappe HR does not re-evaluate such days on its own — please cancel and re-mark the attendance:","Diese Offline-Stempel wurden gebucht, aber ihr Tag hatte schon eine Anwesenheit (zum Beispiel „Absent“ aus dem Ausfall). Frappe HR bewertet solche Tage nicht von selbst neu – bitte die Anwesenheit stornieren und neu setzen:"
+Time clock back online: {0},Stempeluhr wieder online: {0}
+Time clock offline: {0},Stempeluhr offline: {0}
+Time clock: offline punches on days with attendance already marked,Stempeluhr: Offline-Stempel an Tagen mit bereits gesetzter Anwesenheit
+Too many punches in one request,Zu viele Stempel in einer Anfrage
 Too many unknown badges. Please wait a minute and try again.,Zu viele unbekannte Badges. Bitte eine Minute warten und erneut versuchen.
 Too many wrong attempts. Please wait a minute and try again.,Zu viele Fehlversuche. Bitte eine Minute warten und erneut versuchen.
 Undo window has expired,Das Zeitfenster zum Stornieren ist abgelaufen
 Unknown badge,Unbekanntes Badge
+Unknown employee,Unbekannter Mitarbeiter
 Wrong PIN,Falsche PIN

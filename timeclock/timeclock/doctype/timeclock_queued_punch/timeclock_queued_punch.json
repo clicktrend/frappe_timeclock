@@ -1,0 +1,227 @@
+{
+ "actions": [],
+ "autoname": "format:TCQ-{YYYY}-{#####}",
+ "creation": "2026-11-10 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "employee",
+  "employee_name",
+  "log_type",
+  "method",
+  "column_break_main",
+  "claimed_time",
+  "received_time",
+  "device",
+  "checkin",
+  "section_review",
+  "reason",
+  "attendance",
+  "column_break_review",
+  "badge_hash",
+  "section_clock",
+  "device_time",
+  "clock_offset_ms",
+  "column_break_clock",
+  "clock_synced_at",
+  "client_uuid"
+ ],
+ "fields": [
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Booked\nQuarantine\nDiscarded",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "log_type",
+   "fieldtype": "Select",
+   "label": "Log Type",
+   "options": "\nIN\nOUT",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "method",
+   "fieldtype": "Select",
+   "label": "Method",
+   "options": "PIN\nBadge",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "claimed_time",
+   "fieldtype": "Datetime",
+   "label": "Punch Time (Claimed by Device)",
+   "in_list_view": 1,
+   "read_only": 1,
+   "description": "Tablet clock corrected by its last known offset to the server clock."
+  },
+  {
+   "fieldname": "received_time",
+   "fieldtype": "Datetime",
+   "label": "Received by Server",
+   "read_only": 1
+  },
+  {
+   "fieldname": "device",
+   "fieldtype": "Link",
+   "label": "Device",
+   "options": "Timeclock Device",
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "checkin",
+   "fieldtype": "Link",
+   "label": "Employee Checkin",
+   "options": "Employee Checkin",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_review",
+   "fieldtype": "Section Break",
+   "label": "Review"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason",
+   "read_only": 1,
+   "description": "Why the punch was held back, or a note on the booking."
+  },
+  {
+   "fieldname": "attendance",
+   "fieldtype": "Link",
+   "label": "Attendance Already Marked",
+   "options": "Attendance",
+   "read_only": 1,
+   "description": "The day already had an attendance when the punch arrived. Frappe HR does not re-evaluate it on its own: check and correct it."
+  },
+  {
+   "fieldname": "column_break_review",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "badge_hash",
+   "fieldtype": "Data",
+   "label": "Badge Hash (SHA-256)",
+   "read_only": 1,
+   "description": "Only set for unknown badges. The badge itself is never stored."
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_clock",
+   "fieldtype": "Section Break",
+   "label": "Device Clock"
+  },
+  {
+   "fieldname": "device_time",
+   "fieldtype": "Datetime",
+   "label": "Raw Device Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "clock_offset_ms",
+   "fieldtype": "Int",
+   "label": "Clock Offset (ms)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_clock",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "clock_synced_at",
+   "fieldtype": "Datetime",
+   "label": "Offset Measured At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "client_uuid",
+   "fieldtype": "Data",
+   "label": "Client UUID",
+   "unique": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Timeclock",
+ "name": "Timeclock Queued Punch",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "HR User"
+  }
+ ],
+ "sort_field": "claimed_time",
+ "sort_order": "DESC",
+ "states": [
+  {
+   "title": "Booked",
+   "color": "Green"
+  },
+  {
+   "title": "Quarantine",
+   "color": "Orange"
+  },
+  {
+   "title": "Discarded",
+   "color": "Gray"
+  }
+ ],
+ "title_field": "employee_name",
+ "track_changes": 1
+}
