@@ -6,6 +6,7 @@ from frappe import _
 from frappe.utils import now_datetime, time_diff_in_seconds
 from frappe.utils.password import get_decrypted_password
 
+from timeclock import __version__, offline
 from timeclock.install import KIOSK_ROLE
 
 MAX_PIN_ATTEMPTS = 5
@@ -33,6 +34,12 @@ def get_kiosk_config():
 		# clock always shows the same time that punches are recorded with
 		# (punch timestamps are server-side anyway, see _insert_checkin)
 		"server_time": str(now_datetime()),
+		"offline_enabled": bool(settings.get("offline_enabled")),
+		"version": __version__,
+		"build": offline.current_kiosk_build(),
+		# a kiosk that booted from its offline cache holds a stale token —
+		# this GET hands it a fresh one before it POSTs anything
+		"csrf_token": frappe.sessions.get_csrf_token(),
 	}
 
 
@@ -44,7 +51,7 @@ def get_kiosk_employees():
 	employees = frappe.get_all(
 		"Employee",
 		filters={"status": "Active", "timeclock_enabled": 1},
-		fields=["name", "employee_name", "image"],
+		fields=["name", "employee_name", "image", "timeclock_badge_id"],
 		order_by="employee_name asc",
 	)
 	if not employees:
@@ -66,6 +73,9 @@ def get_kiosk_employees():
 	by_employee = {row.employee: row for row in last_logs}
 
 	for emp in employees:
+		# the kiosk's offline cache only needs to recognise a badge, never to own one
+		badge = emp.pop("timeclock_badge_id", None)
+		emp["badge_hash"] = offline.badge_hash(badge) if badge else None
 		last = by_employee.get(emp.name)
 		emp["last_log_type"] = last.log_type if last else None
 		emp["last_time"] = last.time if last else None
@@ -156,6 +166,36 @@ def undo_punch(checkin: str, device_id: str | None = None):
 
 	frappe.delete_doc("Employee Checkin", checkin, ignore_permissions=True)
 	return {"undone": checkin}
+
+
+@frappe.whitelist(methods=["POST"])
+def heartbeat(device_id: str, version: str | None = None, build: str | None = None, pending: int = 0):
+	"""Every 30 s from each kiosk: registers the device, records version and the
+	number of punches still waiting on it. The answer tells an outdated kiosk to
+	reload (FreeKiosk never reloads on its own) and refreshes its clock offset."""
+	_check_kiosk_access()
+	return offline.record_heartbeat(device_id, version, build, pending)
+
+
+@frappe.whitelist(methods=["POST"])
+def sync_offline_punches(device_id: str, punches):
+	"""Punches the kiosk stored while it could not reach the server. Each one is
+	verified here and either booked as Employee Checkin or held in quarantine.
+	Idempotent per client_uuid — a retried sync never books twice."""
+	_check_kiosk_access()
+	return offline.sync_punches(device_id, punches)
+
+
+@frappe.whitelist(methods=["POST"])
+def book_queued_punch(name: str, employee: str | None = None, log_type: str | None = None):
+	"""HR: book a quarantined punch after review."""
+	return offline.book_quarantined(name, employee, log_type)
+
+
+@frappe.whitelist(methods=["POST"])
+def discard_queued_punch(name: str):
+	"""HR: close a quarantined punch without booking it."""
+	return offline.discard_quarantined(name)
 
 
 @frappe.whitelist()

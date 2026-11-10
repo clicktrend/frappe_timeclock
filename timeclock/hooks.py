@@ -37,15 +37,28 @@ doctype_list_js = {"Employee": "public/js/employee_list.js"}
 # QR rendering for the 'Timeclock Badge' print format
 jinja = {"methods": ["timeclock.badge.timeclock_badge_qr_svg"]}
 
-# No scheduler_events on purpose. Realtime punches are only picked up by auto
-# attendance once Shift Type.last_sync_of_checkin advances past them — but that
-# field belongs to HRMS, which ships its own hourly_long job for it and gates it
-# behind the per-shift "Auto Update Last Sync" checkbox. Advancing it from here
-# would override that opt-out for every shift on the site, including ones fed by
-# a biometric device. Tick the checkbox instead (see Setup in the README).
-
 # CI: bootstrap a bare test site via the HRMS setup helper (no-op on set-up sites)
 before_tests = "timeclock.tests.utils.before_tests"
+
+# /kiosk-sw.js — lets the kiosk page start without a network (see kiosk_sw.py)
+page_renderer = ["timeclock.kiosk_sw.KioskServiceWorker"]
+
+# Timeclock Queued Punch points at the attendance a late offline punch ran into, so
+# HR finds it — that pointer must not stop HR from deleting the attendance.
+ignore_links_on_delete = ["Timeclock Queued Punch"]
+
+# The only job is the kiosk device watch. Deliberately NOT here: advancing
+# Shift Type.last_sync_of_checkin. Realtime punches are only picked up by auto
+# attendance once that field passes them — but it belongs to HRMS, which ships its
+# own hourly_long job for it and gates it behind the per-shift "Auto Update Last
+# Sync" checkbox. Advancing it from here would override that opt-out for every
+# shift on the site, including ones fed by a biometric device. Tick the checkbox
+# instead (see Setup in the README).
+scheduler_events = {
+	"cron": {
+		"* * * * *": ["timeclock.offline.check_devices"],
+	},
+}
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [

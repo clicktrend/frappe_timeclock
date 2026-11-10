@@ -26,17 +26,21 @@ No proprietary hardware, no forked doctypes — a small app on top of plain Frap
 - **Privacy by default:** the camera scans without showing its image (a badge icon + "scanner ready" pulse instead); a live preview can be enabled in settings. If the camera cannot start, the kiosk says so loudly and falls back to PIN
 - Confirmation **sounds** (rising two-tone for IN, falling for OUT), toggleable
 - Works on any webcam/browser for testing — camera access requires a secure context (HTTPS or `localhost`)
+- **Offline mode:** when the site cannot be reached, the kiosk keeps accepting PIN and badge punches, stores them on the device and books them once the connection is back. A service worker lets `/kiosk` start even if the tablet reboots during the outage (see *Offline punches* below)
 
 **Admin (Desk)**
 - Own **app tile** in the launcher + **Timeclock workspace**, visible only to System Managers / HR Managers
 - Dashboard: **who's-in board** (name, in since, device), number cards (*present now, punches today, missing check-outs, absent today*) and a working-hours chart
 - **Time Clock tab on the Employee form:** enable flag, PIN (encrypted at rest, validated server-side), badge ID, inline **QR preview** and **badge printing** (86×54 mm card print format with server-rendered QR)
 - **Generate Badge** re-issues a random UUID — a lost card stops working immediately
-- `Timeclock Settings` single: camera preview, sounds, kiosk language (German/English)
+- `Timeclock Settings` single: camera preview, sounds, kiosk language (German/English), offline mode, device alerts
+- **Kiosk Devices** (`Timeclock Device`): every terminal registers itself on its first heartbeat (every 30 s) and shows online/offline, kiosk version, *outdated* flag, punches still waiting on the device and the last offline sync. An outdated kiosk reloads itself when idle
+- **Offline alerts** by email after a configurable silence (default 15 min) within a time window (default 06:00–20:00, weekdays), plus a notice when the device is back
+- **Offline Punches** (`Timeclock Queued Punch`): every punch taken offline, booked or held in quarantine, with *Book Anyway* / *Discard* for HR
 
 **Integration & security**
 - Punches are standard **Employee Checkin** records (`log_type`, `time`, `device_id`) — HRMS **Auto Attendance** turns them into Attendance + working hours
-- No custom processing and no scheduler jobs of its own: HRMS' *Auto Update Last Sync* option on the Shift Type advances `last_sync_of_checkin` for realtime punches (see Setup)
+- No custom attendance processing: HRMS' *Auto Update Last Sync* option on the Shift Type advances `last_sync_of_checkin` for realtime punches (see Setup). The app's only scheduler job watches the kiosk devices
 - PIN comparison is constant-time and server-side, with per-employee lockout after 5 failed attempts; unknown badges are rate-limited per device
 - Badges are random 128-bit UUIDs, never the employee number
 - The kiosk runs under a dedicated user with the **Timeclock Kiosk** role — no desk access, no employee data beyond the grid
@@ -51,7 +55,18 @@ Timeclock deliberately owns **no** time data. Frappe HR already models the level
 | Evaluated day | `Attendance` — submittable, created by HRMS Auto Attendance | Draft until someone submits it |
 | Money | Salary Slip and whatever else reads Attendance | **Yes** |
 
-The app's own schema is one Single (`Timeclock Settings`) plus four custom fields on `Employee` (enable flag, PIN, badge ID, QR preview). There is no parallel time-record table, and **nothing writes `Attendance` directly** — the app only ever creates `Employee Checkin`.
+The app's own schema is one Single (`Timeclock Settings`), the device registry (`Timeclock Device`), the offline review queue (`Timeclock Queued Punch`, see below), four custom fields on `Employee` (enable flag, PIN, badge ID, QR preview) and one on `Employee Checkin` (link to the offline punch it came from). There is no parallel time-record table, and **nothing writes `Attendance` directly** — the app only ever creates `Employee Checkin`.
+
+### Offline punches
+
+An online punch gets its time from the server. A punch taken offline carries a time the **tablet** claims — the tablet clock plus the last offset it measured against the server. So it is not written to `Employee Checkin` blindly:
+
+1. The kiosk stores the punch on the device (`localStorage`) together with the PIN or badge as entered. It holds no secret to verify anything — no PIN hashes, no badge IDs (only SHA-256 hashes of badges, to put a name on the confirmation screen).
+2. When the site answers again, the kiosk sends its queue. Each punch becomes a `Timeclock Queued Punch` with claimed time, arrival time and clock offset, and is checked there: PIN or badge valid, employee enabled, the device clock was matched with the server at least once, the time is not in the future and not older than *Max. Age of Offline Punches* (default 72 h), and there is no punch in the same direction within two minutes (a punch whose answer got lost on the way).
+3. A punch that passes is booked as a regular `Employee Checkin` at the claimed time, linked back to its queued punch. Anything else stays in **quarantine** for HR, with the reason. The PIN is never stored; an unknown badge is kept as a hash only. Syncs are idempotent — a retried request never books twice.
+4. If the day already has an `Attendance` (typically *Absent*, marked during the outage), HRMS will skip the late punch. The queued punch then points at that attendance and the alert recipients get one email listing such cases, so HR can cancel and re-mark the day.
+
+The confirmation screen says *saved offline* instead of *saved*: a wrong PIN typed offline is only noticed at sync time, and lands in quarantine.
 
 That is the whole design decision, and it buys three things: every HRMS feature reading checkins keeps working (shifts, overtime, timesheets, geolocation fields, a biometric device running in parallel), corrections happen in the standard HR tooling your team already knows, and you can uninstall the app without losing a single punch.
 
@@ -122,8 +137,14 @@ bench --site yoursite execute hrms.hr.doctype.shift_type.shift_type.update_last_
 bench --site yoursite execute hrms.hr.doctype.shift_type.shift_type.process_auto_attendance_for_all_shifts
 ```
 
-**The kiosk shows "No connection to the server".**
-The site did not answer. A deployment, a restart, a reverse proxy's error page and a dropped network all look identical from the kiosk, and it deliberately does not try to tell them apart — every operator signals them differently. It retries every 15 seconds and recovers by itself; no reload and no reboot needed. Punching is impossible in the meantime, which is why the *clock in without badge* button is disabled while the notice is up.
+**The kiosk shows "Offline – clocking in still works".**
+The site did not answer. A deployment, a restart, a reverse proxy's error page and a dropped network all look identical from the kiosk, and it deliberately does not try to tell them apart — every operator signals them differently. Punches are stored on the device meanwhile; the kiosk retries every 15 seconds, books the queue and recovers by itself — no reload and no reboot needed. Check *Kiosk Devices* for the number of punches still waiting.
+
+**The kiosk shows "No connection to the server" and punching is blocked.**
+Offline mode is switched off in *Timeclock Settings*, or the kiosk has never loaded the employee list yet (a brand-new device that was offline from the start).
+
+**Offline punches end up in quarantine with "The device clock was never matched with the server".**
+The tablet stored them before it ever reached the site (e.g. set up and used without network). Check the times and use *Book Anyway*.
 
 **The camera panel stays empty / no QR is read.**
 `getUserMedia` requires a secure context: serve the site over HTTPS, or use `http://localhost` while developing. A camera already claimed by another app also yields an empty panel.
@@ -154,17 +175,16 @@ The kiosk UI ships in German and English — switch via *Timeclock Settings → 
 A wall terminal is a trust-by-convenience device. It is worth being explicit about what this one does not do.
 
 - **A PIN or a badge identifies, it does not authenticate.** Anyone who watches you type your PIN or photographs your badge QR can punch for you. Timeclock does not try to prevent buddy punching — there is no biometry and none is planned. What it offers instead is traceability: every punch carries its `device_id`, the who's-in board makes presence visible in real time, and *Generate Badge* invalidates a copied card immediately.
-- **Rejected scans leave no trace.** An unknown badge, or an employee who is not enabled, gets an error on screen and nothing is written anywhere. So *"but I did clock in"* cannot be checked afterwards, and a badge still in circulation after someone has left goes unnoticed. A quarantine log is on the roadmap.
-- **No offline mode.** If the network or the site is down, the terminal cannot punch. That is a deliberate trade for now: every recorded time comes from the **server** clock, never from the tablet — the kiosk display is merely synced to it, so a device with the wrong time zone still records correctly. An offline queue breaks that guarantee, which is why it is designed as a review step rather than a direct write (see Roadmap). While the site is unreachable the kiosk says so plainly, disables the PIN path so nobody walks into a dead end, and retries every 15 seconds — it comes back on its own after a deployment, without anyone touching the tablet.
+- **Rejected online scans leave no trace.** An unknown badge, or an employee who is not enabled, gets an error on screen and nothing is written anywhere. So *"but I did clock in"* cannot be checked afterwards, and a badge still in circulation after someone has left goes unnoticed. Offline punches already go through quarantine; the same log for online rejections is on the roadmap.
+- **Offline punches carry a device-claimed time.** Online punches take their time from the **server** clock. Offline ones use the tablet clock corrected by its last measured offset, so they are verified and recorded with their provenance instead of being trusted (see *Offline punches*). A PIN typed offline stays on the device until the next sync, then it is deleted. A kiosk that is switched off or has no power stores nothing — the offline alert tells you about it.
 - **The kiosk device is trusted.** The auto-login token is a long-lived shared credential: whoever holds the URL can list employee names and punch with a valid PIN or badge. Treat it like a password, keep it on managed devices, and rotate it — which locks out every terminal at once, by design.
 - **Turning punches into attendance is HRMS' job, not this app's.** Timeclock adds no rules of its own; working hours, overtime and shift handling depend entirely on your Shift Type setup, including the one checkbox that fails silently (see Troubleshooting).
 - **No compliance claims.** Recording punches is not the same as meeting your jurisdiction's working-time documentation duties. Review that with whoever is responsible for it.
-- **Maturity.** v0.1.x. In daily production use at one site (~30 employees, a single wall-mounted terminal). CI runs lint, the frontend build and the server tests against Frappe v16 + HRMS. Multi-terminal and larger deployments are untested.
+- **Maturity.** In daily production use at one site (~30 employees, a single wall-mounted terminal). CI runs lint, the frontend build and the server tests against Frappe v16 + HRMS. The device registry is built for several terminals; larger deployments are untested.
 
 ## Roadmap
 
-- **Quarantine log for rejected scans** — unknown badges and disabled employees recorded as a visible, expiring log (hashed badge id, device, reason) instead of vanishing
-- **Offline queue** (service worker). Queued punches carry a timestamp claimed by the *device*, not the server, so they will land in a small review queue — with the claimed time, the arrival time and the device's clock offset — rather than being written to `Employee Checkin` unseen
+- **Quarantine log for rejected online scans** — unknown badges and disabled employees recorded like offline punches (hashed badge id, device, reason) instead of vanishing, with an expiry
 - Wallet passes (Apple/Google) carrying the badge QR
 - Reduced badge-management view for supervisors without full HR permissions
 

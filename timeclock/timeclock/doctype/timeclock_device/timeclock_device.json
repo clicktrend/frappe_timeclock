@@ -1,0 +1,176 @@
+{
+ "actions": [],
+ "autoname": "field:device_id",
+ "creation": "2026-11-10 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "device_id",
+  "label",
+  "status",
+  "column_break_status",
+  "app_version",
+  "outdated",
+  "section_sync",
+  "last_seen",
+  "offline_since",
+  "column_break_sync",
+  "pending_punches",
+  "last_sync",
+  "section_client",
+  "user_agent",
+  "last_ip",
+  "alert_sent"
+ ],
+ "fields": [
+  {
+   "fieldname": "device_id",
+   "fieldtype": "Data",
+   "label": "Device ID",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "read_only": 1,
+   "description": "From the kiosk start URL (?device=...). Registered automatically on the first heartbeat."
+  },
+  {
+   "fieldname": "label",
+   "fieldtype": "Data",
+   "label": "Label",
+   "in_list_view": 1,
+   "description": "Where the tablet hangs, e.g. 'Entrance hall'."
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Online\nOffline",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_status",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "app_version",
+   "fieldtype": "Data",
+   "label": "Kiosk Version",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "outdated",
+   "fieldtype": "Check",
+   "label": "Outdated",
+   "read_only": 1,
+   "description": "The kiosk runs an older build than the server ships. It reloads itself when idle."
+  },
+  {
+   "fieldname": "section_sync",
+   "fieldtype": "Section Break",
+   "label": "Connection"
+  },
+  {
+   "fieldname": "last_seen",
+   "fieldtype": "Datetime",
+   "label": "Last Seen",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "offline_since",
+   "fieldtype": "Datetime",
+   "label": "Offline Since",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_sync",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "pending_punches",
+   "fieldtype": "Int",
+   "label": "Punches Waiting on Device",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_sync",
+   "fieldtype": "Datetime",
+   "label": "Last Offline Sync",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_client",
+   "fieldtype": "Section Break",
+   "label": "Client"
+  },
+  {
+   "fieldname": "user_agent",
+   "fieldtype": "Small Text",
+   "label": "User Agent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_ip",
+   "fieldtype": "Data",
+   "label": "Last IP",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "alert_sent",
+   "fieldtype": "Check",
+   "label": "Offline Alert Sent",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-10 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Timeclock",
+ "name": "Timeclock Device",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "HR User"
+  }
+ ],
+ "sort_field": "device_id",
+ "sort_order": "ASC",
+ "states": [],
+ "title_field": "label",
+ "show_title_field_in_link": 0
+}
