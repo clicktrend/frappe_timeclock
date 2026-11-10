@@ -10,7 +10,17 @@
   "kiosk_language",
   "kiosk_device_section",
   "kiosk_autologin_user",
-  "kiosk_autologin_token"
+  "kiosk_autologin_token",
+  "offline_section",
+  "offline_enabled",
+  "offline_max_age_hours",
+  "device_alert_section",
+  "device_alert_minutes",
+  "device_alert_recipients",
+  "device_alert_column",
+  "device_alert_from",
+  "device_alert_to",
+  "device_alert_weekends"
  ],
  "fields": [
   {
@@ -57,12 +67,72 @@
    "fieldname": "kiosk_autologin_token",
    "fieldtype": "Data",
    "label": "Kiosk Auto-Login Token"
+  },
+  {
+   "fieldname": "offline_section",
+   "fieldtype": "Section Break",
+   "label": "Offline Mode"
+  },
+  {
+   "default": "1",
+   "description": "When the server cannot be reached, the kiosk keeps accepting punches and stores them on the device. They are booked as soon as the connection is back. PIN and badge are checked by the server at that moment, never on the device.",
+   "fieldname": "offline_enabled",
+   "fieldtype": "Check",
+   "label": "Allow Punching While Offline"
+  },
+  {
+   "default": "72",
+   "depends_on": "offline_enabled",
+   "description": "Offline punches older than this when they reach the server are not booked automatically but held for review.",
+   "fieldname": "offline_max_age_hours",
+   "fieldtype": "Int",
+   "label": "Max. Age of Offline Punches (Hours)"
+  },
+  {
+   "fieldname": "device_alert_section",
+   "fieldtype": "Section Break",
+   "label": "Device Monitoring"
+  },
+  {
+   "default": "15",
+   "description": "Send an alert when a kiosk has not reported for this many minutes. 0 disables alerts. A kiosk shows as Offline after two minutes without contact regardless of this value.",
+   "fieldname": "device_alert_minutes",
+   "fieldtype": "Int",
+   "label": "Alert After Silence (Minutes)"
+  },
+  {
+   "description": "One email address per line. Receives offline alerts, recovery notices and offline punches that hit an already marked attendance.",
+   "fieldname": "device_alert_recipients",
+   "fieldtype": "Small Text",
+   "label": "Alert Recipients"
+  },
+  {
+   "fieldname": "device_alert_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "06:00:00",
+   "fieldname": "device_alert_from",
+   "fieldtype": "Time",
+   "label": "Alert Window From"
+  },
+  {
+   "default": "20:00:00",
+   "fieldname": "device_alert_to",
+   "fieldtype": "Time",
+   "label": "Alert Window To"
+  },
+  {
+   "default": "0",
+   "fieldname": "device_alert_weekends",
+   "fieldtype": "Check",
+   "label": "Alert on Weekends"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-08-06 14:00:00.000000",
+ "modified": "2026-11-10 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Timeclock",
  "name": "Timeclock Settings",

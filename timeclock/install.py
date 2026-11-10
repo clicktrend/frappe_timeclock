@@ -48,7 +48,20 @@ CUSTOM_FIELDS = {
 			"insert_after": "timeclock_badge_id",
 			"depends_on": "eval:doc.timeclock_badge_id",
 		},
-	]
+	],
+	"Employee Checkin": [
+		{
+			"fieldname": "timeclock_queued_punch",
+			"fieldtype": "Link",
+			"label": "Offline Punch",
+			"options": "Timeclock Queued Punch",
+			"insert_after": "device_id",
+			"read_only": 1,
+			"no_copy": 1,
+			"depends_on": "timeclock_queued_punch",
+			"description": "Taken on the kiosk while it was offline, booked when it reconnected.",
+		},
+	],
 }
 
 
@@ -76,7 +89,15 @@ def setup():
 
 # Check fields on a never-saved Single read as 0, silently ignoring the field's
 # declared default — seed defaults that differ from 0 once, explicitly.
-SETTINGS_DEFAULTS = {"play_sounds": 1, "kiosk_language": "de"}
+SETTINGS_DEFAULTS = {
+	"play_sounds": 1,
+	"kiosk_language": "de",
+	"offline_enabled": 1,
+	"offline_max_age_hours": 72,
+	"device_alert_minutes": 15,
+	"device_alert_from": "06:00:00",
+	"device_alert_to": "20:00:00",
+}
 
 
 def _seed_settings_defaults():
@@ -263,6 +284,14 @@ WORKSPACE_SHORTCUTS = [
 		"stats_filter": json.dumps({"timeclock_enabled": 1}),
 	},
 	{"label": "Checkins", "link_to": "Employee Checkin", "type": "DocType", "doc_view": "List"},
+	{"label": "Kiosk Devices", "link_to": "Timeclock Device", "type": "DocType", "doc_view": "List"},
+	{
+		"label": "Offline Punches",
+		"link_to": "Timeclock Queued Punch",
+		"type": "DocType",
+		"doc_view": "List",
+		"stats_filter": json.dumps({"status": "Quarantine"}),
+	},
 	{"label": "Attendance", "link_to": "Attendance", "type": "DocType", "doc_view": "List"},
 	# opens the actual kiosk page — handy for admins to preview or to grab the URL
 	{"label": "Open Kiosk", "type": "URL", "url": "/kiosk"},

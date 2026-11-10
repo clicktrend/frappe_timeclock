@@ -7,9 +7,21 @@
 			</div>
 			<div class="text-2xl text-zinc-400">{{ today }}</div>
 
+			<!-- Offline mode: punching continues, the device keeps the punches -->
+			<div
+				v-if="offline && canPunchOffline"
+				class="mt-8 rounded-2xl bg-amber-500/15 px-6 py-3 text-center ring-1 ring-amber-500/30"
+			>
+				<div class="text-lg font-semibold text-amber-300">{{ t("offline_mode_title") }}</div>
+				<div class="text-sm text-amber-200/80">{{ t("offline_mode_hint") }}</div>
+			</div>
+			<div v-if="queue.length" class="mt-3 text-sm text-zinc-400">
+				{{ t("queue_waiting").replace("{n}", queue.length) }}
+			</div>
+
 			<!-- Badge prompt / scanner state -->
 			<div class="mt-12 flex flex-col items-center gap-3">
-				<template v-if="offline">
+				<template v-if="offline && !canPunchOffline">
 					<div class="text-6xl" aria-hidden="true">⚠️</div>
 					<div class="text-xl font-semibold text-amber-400">{{ t("offline_title") }}</div>
 					<div class="text-sm text-zinc-500">{{ t("offline_hint") }}</div>
@@ -40,7 +52,7 @@
 			<button
 				class="mt-12 rounded-2xl px-10 py-5 text-xl font-medium shadow-lg transition active:scale-95 disabled:opacity-40 disabled:active:scale-100"
 				:class="camAvailable ? 'bg-zinc-900 text-zinc-200 ring-1 ring-zinc-700' : 'bg-blue-600 text-white'"
-				:disabled="offline"
+				:disabled="offline && !canPunchOffline"
 				@click="screen = 'grid'"
 			>
 				{{ t("without_badge") }}
@@ -61,14 +73,16 @@
 			</header>
 
 			<div class="min-h-0 flex-1 overflow-y-auto p-6">
-				<div v-if="employees.loading" class="mt-20 text-center text-lg text-zinc-400">{{ t("loading_employees") }}</div>
-				<div v-else-if="employees.error" class="mt-20 text-center text-lg text-red-400">
+				<div v-if="!gridEmployees && employees.loading" class="mt-20 text-center text-lg text-zinc-400">
+					{{ t("loading_employees") }}
+				</div>
+				<div v-else-if="!gridEmployees" class="mt-20 text-center text-lg text-red-400">
 					{{ t("connection_error") }}<br />
 					<span class="text-sm text-zinc-500">{{ t("connection_hint") }}</span>
 				</div>
 				<div v-else class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
 					<button
-						v-for="emp in employees.data"
+						v-for="emp in gridEmployees"
 						:key="emp.name"
 						class="flex h-36 flex-col items-center justify-center gap-2 rounded-2xl bg-zinc-900 ring-1 ring-zinc-800 transition active:scale-95 active:bg-zinc-800"
 						@click="selectEmployee(emp)"
@@ -168,19 +182,22 @@
 		<main
 			v-else
 			class="flex flex-1 flex-col items-center justify-center gap-3"
-			:class="result.log_type === 'IN' ? 'bg-emerald-600' : 'bg-orange-500'"
+			:class="result.log_type === 'IN' ? 'bg-emerald-600' : result.log_type === 'OUT' ? 'bg-orange-500' : 'bg-zinc-700'"
 		>
 			<!-- explicit rem sizes: the frappe-ui preset shrinks the named text-* scale,
 			     but this screen must be readable from across the room -->
 			<div class="confirm-pop text-[5.5rem] leading-none text-white">✓</div>
-			<div class="text-[1.75rem] font-medium text-white/90">{{ result.employee_name }}</div>
+			<div class="text-[1.75rem] font-medium text-white/90">{{ result.employee_name || t("badge_pending") }}</div>
 			<div class="text-[3.25rem] font-bold leading-tight text-white">
-				{{ result.log_type === "IN" ? t("came") : t("left") }}
+				{{ result.log_type === "IN" ? t("came") : result.log_type === "OUT" ? t("left") : t("punch_queued") }}
 			</div>
 			<div class="mt-2 font-mono text-[4.5rem] font-semibold leading-none text-white">
 				{{ formatTime(result.time) }}{{ t("time_suffix") }}
 			</div>
-			<div class="mt-2 text-[1.1rem] text-white/80">{{ t("saved") }}</div>
+			<div v-if="result.offline" class="mt-3 rounded-xl bg-black/25 px-5 py-2 text-[1.2rem] font-medium text-white">
+				{{ t("saved_offline") }}
+			</div>
+			<div v-else class="mt-2 text-[1.1rem] text-white/80">{{ t("saved") }}</div>
 			<button
 				v-if="undoLeft > 0"
 				class="mt-8 rounded-2xl bg-white/20 px-10 py-4 text-[1.4rem] font-medium text-white transition active:scale-95"
@@ -199,12 +216,29 @@ import QrScanner from "qr-scanner"
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue"
 
 import { LOCALES, MESSAGES } from "./i18n.js"
+import {
+	BUILD,
+	loadClock,
+	loadConfig,
+	loadEmployees,
+	loadQueue,
+	looksLikeBadge,
+	newPunchId,
+	saveClock,
+	saveConfig,
+	saveEmployees,
+	saveQueue,
+	sha256Hex,
+	wallTime,
+} from "./offline.js"
 import { playPunchSound, unlockSound } from "./sound.js"
 
 const DEVICE_ID = new URLSearchParams(window.location.search).get("device") || "kiosk"
 const CONFIRM_SECONDS = 5
 const SCAN_COOLDOWN_MS = 4000
 const IDLE_BACK_MS = 45_000
+const HEARTBEAT_MS = 30_000
+const SYNC_BATCH = 50
 
 const screen = ref("home")
 const selected = ref(null)
@@ -217,11 +251,17 @@ const undoLeft = ref(0)
 const undoDone = ref(false)
 
 const employees = createResource({ url: "timeclock.api.get_kiosk_employees" })
-const kioskConfig = createResource({ url: "timeclock.api.get_kiosk_config" })
-const showPreview = computed(() => Boolean(kioskConfig.data?.show_camera_preview))
-const soundsEnabled = computed(() => Boolean(kioskConfig.data?.play_sounds))
+// GET on purpose: after a cold start from the offline cache the page holds a stale
+// CSRF token — this request needs none and hands out a fresh one (see the watch below)
+const kioskConfig = createResource({ url: "timeclock.api.get_kiosk_config", method: "GET" })
+// the last config and grid that worked — what an offline kiosk runs on
+const cachedConfig = ref(loadConfig())
+const cachedEmployees = ref(loadEmployees())
+const config = computed(() => kioskConfig.data || cachedConfig.value)
+const showPreview = computed(() => Boolean(config.value?.show_camera_preview))
+const soundsEnabled = computed(() => Boolean(config.value?.play_sounds))
 
-const lang = computed(() => (kioskConfig.data?.language === "en" ? "en" : "de"))
+const lang = computed(() => (config.value?.language === "en" ? "en" : "de"))
 const locale = computed(() => LOCALES[lang.value])
 const t = (key) => MESSAGES[lang.value]?.[key] ?? MESSAGES.de[key] ?? key
 
@@ -229,20 +269,167 @@ const t = (key) => MESSAGES[lang.value]?.[key] ?? MESSAGES.de[key] ?? key
 // server-side — the display must never disagree with what gets recorded).
 // server_time is site-timezone wall time; parsing it as local makes the kiosk
 // show site time even if the tablet's clock or timezone is misconfigured.
-let clockOffset = 0
+// The offset is persisted: an offline punch is stamped with tablet time + the last
+// known offset, and the server only trusts it if the offset was ever measured.
+const storedClock = loadClock()
+let clockOffset = storedClock?.offset || 0
+const clockSyncedAt = ref(storedClock?.at || null)
+
+function applyServerTime(raw) {
+	raw = String(raw || "")
+	const parsed = Date.parse(raw.split(".")[0].replace(" ", "T"))
+	if (Number.isNaN(parsed)) return
+	clockOffset = parsed - Date.now()
+	clockSyncedAt.value = raw
+	saveClock({ offset: clockOffset, at: raw })
+	tick()
+}
+
+// version as of page load — config refreshes hourly and would report the server's
+// version even while this page still runs the old bundle
+let pageVersion = cachedConfig.value?.version || null
 watch(
 	() => kioskConfig.data,
 	(data) => {
-		const raw = String(data?.server_time || "")
-		const parsed = Date.parse(raw.split(".")[0].replace(" ", "T"))
-		if (!Number.isNaN(parsed)) clockOffset = parsed - Date.now()
-		tick()
+		if (!data) return
+		if (data.csrf_token) window.csrf_token = data.csrf_token
+		if (!pageVersion) pageVersion = data.version
+		const { csrf_token, ...stored } = data
+		cachedConfig.value = stored
+		saveConfig(stored)
+		applyServerTime(data.server_time)
+	}
+)
+watch(
+	() => employees.data,
+	(data) => {
+		if (!Array.isArray(data)) return
+		cachedEmployees.value = data
+		saveEmployees(data)
 	}
 )
 
 const punch = createResource({ url: "timeclock.api.punch" })
 const punchBadge = createResource({ url: "timeclock.api.punch_badge" })
 const undoPunch = createResource({ url: "timeclock.api.undo_punch" })
+const syncPunches = createResource({ url: "timeclock.api.sync_offline_punches" })
+const heartbeatResource = createResource({ url: "timeclock.api.heartbeat" })
+
+// ---- offline queue ----
+
+const queue = ref(loadQueue())
+const canPunchOffline = computed(() => Boolean(config.value?.offline_enabled && cachedEmployees.value?.length))
+
+// The grid as the kiosk knows it: last server state plus what is still queued here,
+// so the direction suggestion and the green dot stay right while offline.
+const gridEmployees = computed(() => {
+	const base = employees.data || cachedEmployees.value
+	if (!base) return null
+	if (!queue.value.length) return base
+	const latest = {}
+	for (const punch of queue.value) if (punch.employee && punch.log_type) latest[punch.employee] = punch
+	return base.map((emp) => {
+		const punch = latest[emp.name]
+		if (!punch || (emp.last_time && String(emp.last_time) > punch.claimed_time)) return emp
+		return {
+			...emp,
+			last_log_type: punch.log_type,
+			last_time: punch.claimed_time,
+			suggested_log_type: punch.log_type === "IN" ? "OUT" : "IN",
+		}
+	})
+})
+
+function setQueue(next) {
+	if (!saveQueue(next)) return false
+	queue.value = next
+	return true
+}
+
+// Throws a kiosk error with a readable message if the device cannot store it — the
+// screen must never say "saved" for a punch that is not.
+function enqueue(entry) {
+	const now = Date.now()
+	const punch = {
+		client_uuid: newPunchId(),
+		claimed_time: wallTime(now + clockOffset),
+		device_time: wallTime(now),
+		clock_offset_ms: Math.round(clockOffset),
+		clock_synced_at: clockSyncedAt.value,
+		...entry,
+	}
+	if (!setQueue([...queue.value, punch])) throw kioskError(t("offline_save_failed"))
+	return {
+		offline: true,
+		client_uuid: punch.client_uuid,
+		employee_name: entry.employee_name,
+		log_type: entry.log_type,
+		time: punch.claimed_time,
+	}
+}
+
+function enqueuePin() {
+	return enqueue({
+		method: "PIN",
+		employee: selected.value.name,
+		employee_name: selected.value.employee_name,
+		pin: pin.value,
+		log_type: direction.value,
+	})
+}
+
+async function enqueueBadge(code) {
+	if (!looksLikeBadge(code)) throw kioskError(t("unknown_badge_offline"))
+	const hash = await sha256Hex(code)
+	const emp = hash && gridEmployees.value?.find((e) => e.badge_hash === hash)
+	// an unknown but badge-shaped code is queued too: the server decides, and a
+	// rejected one leaves a trace in quarantine instead of vanishing
+	return enqueue({
+		method: "Badge",
+		badge_id: code.trim(),
+		employee: emp?.name || null,
+		employee_name: emp?.employee_name || null,
+		log_type: emp ? emp.suggested_log_type || "IN" : null,
+	})
+}
+
+let syncing = false
+async function syncQueue() {
+	if (syncing || offline.value || !queue.value.length) return
+	syncing = true
+	try {
+		const batch = queue.value.slice(0, SYNC_BATCH)
+		const results = await syncPunches.submit({ device_id: DEVICE_ID, punches: batch })
+		// booked or held in quarantine: either way the server owns it now. "Error"
+		// stays on the device and goes out again with the next sync.
+		const done = new Set((results || []).filter((r) => r.status !== "Error").map((r) => r.client_uuid))
+		setQueue(queue.value.filter((punch) => !done.has(punch.client_uuid)))
+		if (done.size) refresh(employees)
+		if (done.size && queue.value.length) setTimeout(syncQueue, 0)
+	} catch (err) {
+		if (isTransportError(err)) goOffline()
+	} finally {
+		syncing = false
+	}
+}
+
+async function sendHeartbeat() {
+	if (offline.value) return
+	try {
+		const reply = await heartbeatResource.submit({
+			device_id: DEVICE_ID,
+			version: pageVersion,
+			build: BUILD,
+			pending: queue.value.length,
+		})
+		applyServerTime(reply?.server_time)
+		if (queue.value.length) await syncQueue()
+		// FreeKiosk never reloads by itself — pick up a new build while nobody is punching
+		if (reply?.reload && screen.value === "home" && !queue.value.length) window.location.reload()
+	} catch (err) {
+		if (isTransportError(err)) goOffline()
+	}
+}
 
 // ---- V1: grid + PIN ----
 
@@ -268,6 +455,10 @@ function pressKey(key) {
 async function submit() {
 	punching.value = true
 	try {
+		if (offline.value) {
+			showResult(enqueuePin())
+			return
+		}
 		showResult(
 			await punch.submit({
 				employee: selected.value.name,
@@ -277,7 +468,17 @@ async function submit() {
 			})
 		)
 	} catch (err) {
-		error.value = noteError(err)
+		// the connection dropped right now: keep the punch instead of losing it
+		if (isTransportError(err) && !err?.isKioskError && canPunchOffline.value) {
+			goOffline()
+			try {
+				showResult(enqueuePin())
+				return
+			} catch (saveErr) {
+				err = saveErr
+			}
+		}
+		error.value = offlineMessage(err) || noteError(err)
 		pin.value = ""
 	} finally {
 		punching.value = false
@@ -354,9 +555,19 @@ async function onScan(scanResult) {
 
 	scanBusy.value = true
 	try {
-		showResult(await punchBadge.submit({ badge_id: code, device_id: DEVICE_ID }))
+		if (offline.value && canPunchOffline.value) {
+			showResult(await enqueueBadge(code))
+			return
+		}
+		try {
+			showResult(await punchBadge.submit({ badge_id: code, device_id: DEVICE_ID }))
+		} catch (err) {
+			if (!(isTransportError(err) && canPunchOffline.value)) throw err
+			goOffline()
+			showResult(await enqueueBadge(code))
+		}
 	} catch (err) {
-		scanError.value = noteError(err)
+		scanError.value = offlineMessage(err) || noteError(err)
 		clearTimeout(scanErrorTimer)
 		scanErrorTimer = setTimeout(() => (scanError.value = ""), 3000)
 	} finally {
@@ -395,7 +606,11 @@ async function doUndo() {
 	clearInterval(undoTimer)
 	undoLeft.value = 0
 	try {
-		await undoPunch.submit({ checkin: result.value.name, device_id: DEVICE_ID })
+		if (result.value.offline) {
+			setQueue(queue.value.filter((punch) => punch.client_uuid !== result.value.client_uuid))
+		} else {
+			await undoPunch.submit({ checkin: result.value.name, device_id: DEVICE_ID })
+		}
 		undoDone.value = true
 	} catch (err) {
 		scanError.value = noteError(err)
@@ -411,7 +626,7 @@ function reset() {
 	error.value = ""
 	undoDone.value = false
 	undoLeft.value = 0
-	refresh(employees)
+	if (!offline.value) refresh(employees)
 }
 
 // ---- idle fallback: grid/pin return to the clock after inactivity ----
@@ -461,13 +676,33 @@ function refresh(resource) {
 // returned data — no reading of status codes, which every setup uses differently.
 async function tryReconnect() {
 	await refresh(kioskConfig)
-	if (kioskConfig.error) return
+	if (kioskConfig.error) {
+		// The server answered, but not with data — after a cold start from the
+		// offline cache that is usually an expired session. A real page load lets
+		// the token login in /kiosk run again.
+		if (!isTransportError(kioskConfig.error)) reloadPage()
+		return
+	}
 	clearInterval(reconnectTimer)
 	reconnectTimer = null
 	offline.value = false
 	error.value = ""
 	scanError.value = ""
 	refresh(employees)
+	sendHeartbeat()
+}
+
+// at most once every five minutes, so a server that keeps refusing cannot put the
+// wall terminal into a reload loop
+function reloadPage() {
+	try {
+		const last = Number(window.localStorage.getItem("timeclock.reload_at") || 0)
+		if (Date.now() - last < 300_000) return
+		window.localStorage.setItem("timeclock.reload_at", String(Date.now()))
+	} catch {
+		return
+	}
+	window.location.reload()
 }
 
 // the auto-fetched resources fail on their own, without passing through noteError
@@ -476,6 +711,17 @@ watch([() => employees.error, () => kioskConfig.error], ([empError, configError]
 })
 
 // ---- helpers ----
+
+// Errors the kiosk raised itself (could not store a punch, not a badge) carry
+// their message ready for the screen; everything else goes through noteError,
+// which never puts a raw transport error on the wall.
+function kioskError(message) {
+	return Object.assign(new Error(message), { isKioskError: true })
+}
+
+function offlineMessage(err) {
+	return err?.isKioskError ? err.message : ""
+}
 
 // Records the connection state as a side effect — hence not just "errorMessage".
 function noteError(err) {
@@ -533,6 +779,7 @@ const clock = ref("")
 const today = ref("")
 let clockTimer
 let resyncTimer
+let heartbeatTimer
 function tick() {
 	const now = new Date(Date.now() + clockOffset)
 	clock.value = now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
@@ -551,6 +798,8 @@ onMounted(() => {
 	// hourly re-sync keeps the offset fresh (drift, DST) and picks up
 	// Timeclock Settings changes without a page reload
 	resyncTimer = setInterval(() => refresh(kioskConfig), 3_600_000)
+	heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_MS)
+	setTimeout(sendHeartbeat, 2_000)
 	startScanner()
 	// browsers unlock audio only after a user gesture; badge-only users may never
 	// tap, so grab the very first pointer contact anywhere on the page
@@ -561,6 +810,7 @@ onMounted(() => {
 onUnmounted(() => {
 	clearInterval(clockTimer)
 	clearInterval(resyncTimer)
+	clearInterval(heartbeatTimer)
 	clearInterval(reconnectTimer)
 	clearInterval(undoTimer)
 	clearTimeout(idleTimer)
